@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🦞 Космический ресторан «Чорноморка»</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Fredoka',sans-serif;color:#fff;background:#05010f;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+#app{position:fixed;inset:0}
+
+/* HOME LINK */
+#home{position:fixed;top:12px;left:12px;z-index:60;background:rgba(124,58,237,.85);color:#fff;
+  font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:12px}
+
+/* HUD */
+#hud{position:fixed;inset:0;z-index:20;pointer-events:none}
+#topbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:18px;
+  align-items:center;background:rgba(10,4,30,.55);padding:8px 20px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px)}
+.stat{text-align:center;line-height:1.1}
+.stat .v{font-size:22px;font-weight:700}
+.stat .l{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px}
+#coins .v{color:#fbbf24}
+#lives .v{color:#ff6b8a}
+#combo{color:#34d399}
+
+/* ORDER CARD */
+#order{position:absolute;top:78px;left:50%;transform:translateX(-50%);width:min(90vw,420px);
+  background:rgba(10,4,30,.72);border:1.5px solid rgba(255,105,180,.35);border-radius:20px;
+  padding:14px 18px;text-align:center;backdrop-filter:blur(8px);display:none}
+#order .who{font-size:13px;color:rgba(255,255,255,.6)}
+#order .dish{font-size:30px;font-weight:700;margin:2px 0}
+#order .dish .em{font-size:34px}
+#order .steps{display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+#order .stp{font-size:22px;padding:4px 8px;border-radius:12px;background:rgba(255,255,255,.06);
+  border:1.5px solid rgba(255,255,255,.12);transition:all .2s}
+#order .stp.done{background:rgba(52,211,153,.25);border-color:#34d399;transform:scale(.92)}
+#pbar{height:8px;border-radius:6px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden}
+#pfill{height:100%;width:100%;background:linear-gradient(90deg,#34d399,#fbbf24,#ff6b8a);transition:width .1s linear}
+
+/* ACTION BUTTONS */
+#actions{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;
+  flex-wrap:wrap;justify-content:center;width:min(96vw,720px);pointer-events:auto}
+.act{width:74px;height:74px;border-radius:18px;background:rgba(255,255,255,.06);
+  border:1.5px solid rgba(255,255,255,.15);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;cursor:pointer;transition:transform .1s,background .15s;backdrop-filter:blur(4px)}
+.act:active{transform:scale(.9)}
+.act:hover{background:rgba(255,255,255,.13)}
+.act .ie{font-size:30px;line-height:1}
+.act .in{font-size:10px;color:rgba(255,255,255,.6)}
+#serve{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.5)}
+#serve.ready{background:rgba(52,211,153,.35);box-shadow:0 0 24px rgba(52,211,153,.6);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 34px rgba(52,211,153,.9)}}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#1a0740 0%,#08001c 60%,#040010 100%)}
+.screen h1{font-size:clamp(30px,6vw,50px);font-weight:700;
+  background:linear-gradient(90deg,#ff69b4,#fbbf24,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.screen .tag{color:rgba(255,255,255,.6);margin-top:6px;font-size:16px;max-width:460px}
+.btn{margin-top:22px;font-size:18px;font-weight:600;padding:14px 40px;border:none;border-radius:18px;cursor:pointer;
+  background:linear-gradient(90deg,#ff69b4,#7c3aed);color:#fff;box-shadow:0 8px 26px rgba(124,58,237,.45);transition:transform .15s}
+.btn:hover{transform:translateY(-3px)}
+.hint{margin-top:18px;font-size:13px;color:rgba(255,255,255,.4);line-height:1.7;max-width:440px}
+.hidden{display:none!important}
+
+/* GAME OVER + LEADERBOARD */
+#go .big{font-size:52px;font-weight:700;color:#fbbf24;margin-top:8px}
+#lb{margin-top:18px;width:min(92vw,360px);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:12px 16px;text-align:left}
+#lb h3{font-size:14px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:8px;text-align:center}
+.lbrow{display:flex;justify-content:space-between;font-size:15px;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.lbrow.me{color:#34d399;font-weight:700}
+.lbrow .rk{width:26px;color:rgba(255,255,255,.4)}
+.lbrow .nm{flex:1}
+#namewrap{margin-top:14px;display:flex;gap:8px;justify-content:center}
+#nameInput{font-family:inherit;font-size:16px;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:#fff;width:180px;text-align:center}
+#nameInput::placeholder{color:rgba(255,255,255,.35)}
+#lbnote{margin-top:10px;font-size:11px;color:rgba(255,255,255,.3)}
+
+/* floating score popups */
+.pop{position:fixed;z-index:30;pointer-events:none;font-weight:700;font-size:24px;
+  text-shadow:0 2px 8px rgba(0,0,0,.6);animation:rise 1s ease-out forwards}
+@keyframes rise{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<a id="home" href="index.html">🏠 В меню</a>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="topbar">
+    <div class="stat" id="coins"><div class="v">0</div><div class="l">💰 ЧАЕВЫЕ</div></div>
+    <div class="stat"><div class="v" id="scoreV">0</div><div class="l">ОЧКИ</div></div>
+    <div class="stat" id="combo"><div class="v" id="comboV">×1</div><div class="l">КОМБО</div></div>
+    <div class="stat" id="lives"><div class="v" id="livesV">❤❤❤</div><div class="l">ГОСТИ</div></div>
+  </div>
+
+  <div id="order">
+    <div class="who" id="who">🛸 Гость заказывает:</div>
+    <div class="dish"><span class="em" id="dishEm">🦞</span> <span id="dishName">Раки</span></div>
+    <div class="steps" id="steps"></div>
+    <div id="pbar"><div id="pfill"></div></div>
+  </div>
+
+  <div id="actions"></div>
+</div>
+
+<!-- START -->
+<div class="screen" id="start">
+  <h1>🦞 Ресторан «Чорноморка»</h1>
+  <div class="tag">Космическая забегаловка на орбите. Пришельцы обожают черноморские деликатесы — готовь раков, бычков, рапанов и мидий, пока гости не разбежались!</div>
+  <button class="btn" id="playBtn">Открыть ресторан 🍽️</button>
+  <div class="hint">Гость заказывает блюдо — выполняй шаги <b>по порядку</b> (🔥 сварить, 🔳 пожарить, потом гарнир 🌿🍅🧄🍋).<br>Когда блюдо готово — жми <b>«Подать» 🍽️</b>. Успевай, пока не сгорело терпение гостя!</div>
+</div>
+
+<!-- GAME OVER -->
+<div class="screen hidden" id="go">
+  <h1>Ресторан закрыт 🌙</h1>
+  <div class="big" id="goScore">0</div>
+  <div class="tag" id="goSub">очков</div>
+  <div id="namewrap">
+    <input id="nameInput" maxlength="12" placeholder="Твоё имя" />
+    <button class="btn" style="margin-top:0;padding:10px 22px;font-size:15px" id="saveBtn">Сохранить</button>
+  </div>
+  <div id="lb"><h3>🏆 ТАБЛИЦА РЕКОРДОВ</h3><div id="lbrows"></div></div>
+  <div id="lbnote"></div>
+  <button class="btn" id="againBtn">Ещё раз 🔁</button>
+</div>
+
+<!-- Three.js -->
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// ══════════════════════════════════════════════════════════
+//  ЛИДЕРБОРД  (локальный сейчас; онлайн — если задать URL ниже)
+// ══════════════════════════════════════════════════════════
+// Чтобы включить ОНЛАЙН-рекорды: подними бесплатный бэкенд
+// (Firebase / Supabase / свой мини-сервер) и впиши сюда адрес,
+// который принимает {name,score} на POST и отдаёт [{name,score}] на GET.
+const LEADERBOARD_URL = null;   // напр. 'https://xxxx.supabase.co/rest/v1/scores'
+
+async function fetchScores(){
+  if(LEADERBOARD_URL){
+    try{ const r=await fetch(LEADERBOARD_URL); if(r.ok) return (await r.json()).slice(0,10); }catch(e){}
+  }
+  try{ return JSON.parse(localStorage.getItem('chorno_lb')||'[]'); }catch(e){ return []; }
+}
+async function submitScore(name,score){
+  const local=(()=>{try{return JSON.parse(localStorage.getItem('chorno_lb')||'[]')}catch(e){return[]}})();
+  local.push({name,score}); local.sort((a,b)=>b.score-a.score);
+  const top=local.slice(0,10);
+  localStorage.setItem('chorno_lb',JSON.stringify(top));
+  if(LEADERBOARD_URL){
+    try{ await fetch(LEADERBOARD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,score})}); }catch(e){}
+  }
+  return top;
+}
+
+// ══════════════════════════════════════════════════════════
+//  АУДИО
+// ══════════════════════════════════════════════════════════
+let AC=null;
+function ac(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function beep(freq,dur=.12,type='sine',vol=.25){
+  try{ const a=ac(),o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;o.connect(g);g.connect(a.destination);
+    g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+    o.start();o.stop(a.currentTime+dur);
+  }catch(e){}
+}
+const S={
+  step:()=>beep(560,.09,'triangle',.22),
+  cook:()=>{beep(320,.14,'sawtooth',.18);setTimeout(()=>beep(420,.1,'sawtooth',.14),70);},
+  serve:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.14,'sine',.25),i*80));},
+  wrong:()=>beep(150,.22,'square',.22),
+  lose:()=>beep(110,.4,'sawtooth',.25),
+  click:()=>beep(700,.06,'sine',.15),
+};
+
+// ══════════════════════════════════════════════════════════
+//  РЕЦЕПТЫ
+// ══════════════════════════════════════════════════════════
+// action id → кнопка
+const ACT = {
+  boil:  {em:'🔥', name:'Сварить'},
+  grill: {em:'🔳', name:'Пожарить'},
+  dill:  {em:'🌿', name:'Укроп'},
+  tomato:{em:'🍅', name:'Томат'},
+  garlic:{em:'🧄', name:'Чеснок'},
+  lemon: {em:'🍋', name:'Лимон'},
+  herb:  {em:'🍃', name:'Зелень'},
+};
+const ACT_ORDER=['boil','grill','dill','tomato','garlic','lemon','herb'];
+
+const DISHES = [
+  {em:'🦞', name:'Раки',    steps:['boil','dill'],   col:0xff5a4d},
+  {em:'🐟', name:'Бычки',   steps:['grill','tomato'],col:0x6cb0ff},
+  {em:'🦪', name:'Рапаны',  steps:['grill','garlic'],col:0xd8c090},
+  {em:'🦐', name:'Креветки',steps:['boil','lemon'],  col:0xffa07a},
+  {em:'🦑', name:'Мидии',   steps:['boil','herb'],   col:0x9a8cff},
+  {em:'🍲', name:'Уха',     steps:['boil','herb','dill'], col:0xffcc66},
+];
+
+// ══════════════════════════════════════════════════════════
+//  СЦЕНА 3D
+// ══════════════════════════════════════════════════════════
+const app=document.getElementById('app');
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x08001c,0.03);
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,100);
+camera.position.set(0,4.2,9); camera.lookAt(0,1.3,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+app.appendChild(renderer.domElement);
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+// свет
+scene.add(new THREE.AmbientLight(0x8888ff,0.7));
+const key=new THREE.DirectionalLight(0xffffff,1.1); key.position.set(4,8,6);
+key.castShadow=true; key.shadow.mapSize.set(1024,1024); scene.add(key);
+const rim=new THREE.PointLight(0xff69b4,0.8,30); rim.position.set(-6,3,2); scene.add(rim);
+const rim2=new THREE.PointLight(0x06b6d4,0.7,30); rim2.position.set(6,3,2); scene.add(rim2);
+
+// звёзды
+(function stars(){
+  const g=new THREE.BufferGeometry(),n=900,p=new Float32Array(n*3);
+  for(let i=0;i<n;i++){ p[i*3]=(Math.random()-.5)*80; p[i*3+1]=(Math.random()-.5)*60+10; p[i*3+2]=-Math.random()*60-5; }
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:0.12,transparent:true,opacity:.85})));
+})();
+// планета на фоне
+const planet=new THREE.Mesh(new THREE.SphereGeometry(6,32,32),
+  new THREE.MeshStandardMaterial({color:0x2a6f9e,emissive:0x0a2a44,roughness:.9}));
+planet.position.set(-11,9,-26); scene.add(planet);
+
+// пол/стойка
+const counter=new THREE.Mesh(new THREE.BoxGeometry(14,1,6),
+  new THREE.MeshStandardMaterial({color:0x3a2b55,roughness:.7}));
+counter.position.y=-0.5; counter.receiveShadow=true; scene.add(counter);
+const top=new THREE.Mesh(new THREE.BoxGeometry(14,.2,6),
+  new THREE.MeshStandardMaterial({color:0x6a5a92,roughness:.4,metalness:.3}));
+top.position.y=0.1; top.receiveShadow=true; scene.add(top);
+
+// кастрюля (варка)
+function makePot(){
+  const grp=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(1,.85,1.1,24),
+    new THREE.MeshStandardMaterial({color:0x555,metalness:.7,roughness:.3}));
+  body.position.y=.75; body.castShadow=true; grp.add(body);
+  const soup=new THREE.Mesh(new THREE.CylinderGeometry(.92,.92,.1,24),
+    new THREE.MeshStandardMaterial({color:0xffaa44,emissive:0x552200}));
+  soup.position.y=1.25; grp.add(soup);
+  grp.position.set(-3.2,0.2,0.4); grp.userData.soup=soup;
+  return grp;
+}
+// гриль (жарка)
+function makeGrill(){
+  const grp=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.BoxGeometry(2,.4,1.6),
+    new THREE.MeshStandardMaterial({color:0x333,metalness:.6,roughness:.4}));
+  base.position.y=.4; base.castShadow=true; grp.add(base);
+  const bars=[];
+  for(let i=-2;i<=2;i++){
+    const b=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.08),
+      new THREE.MeshStandardMaterial({color:0x222,emissive:0x000000}));
+    b.position.set(0,.62,i*.28); grp.add(b); bars.push(b);
+  }
+  grp.position.set(3.2,0.2,0.4); grp.userData.bars=bars;
+  return grp;
+}
+const pot=makePot(), grill=makeGrill();
+scene.add(pot); scene.add(grill);
+
+// тарелка подачи (в центре)
+const plate=new THREE.Group();
+const dish=new THREE.Mesh(new THREE.CylinderGeometry(1.1,.9,.15,28),
+  new THREE.MeshStandardMaterial({color:0xf5f5ff,roughness:.3,metalness:.1}));
+dish.position.y=.3; dish.castShadow=true; plate.add(dish);
+plate.position.set(0,0,1.5); scene.add(plate);
+let plateStack=[]; // меши на тарелке
+
+// гость (пришелец)
+function makeAlien(color){
+  const grp=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.9,20,20),
+    new THREE.MeshStandardMaterial({color,roughness:.5}));
+  body.scale.y=1.15; body.castShadow=true; grp.add(body);
+  const eyeMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x222222});
+  const pupilMat=new THREE.MeshStandardMaterial({color:0x111122});
+  for(const dx of [-.32,.32]){
+    const e=new THREE.Mesh(new THREE.SphereGeometry(.22,12,12),eyeMat); e.position.set(dx,.25,.75); grp.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(.1,10,10),pupilMat); p.position.set(dx,.25,.92); grp.add(p);
+  }
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.5),new THREE.MeshStandardMaterial({color}));
+  ant.position.set(0,1.05,0); grp.add(ant);
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.13,10,10),
+    new THREE.MeshStandardMaterial({color:0xffe066,emissive:0x664400})); ball.position.set(0,1.4,0); grp.add(ball);
+  return grp;
+}
+let alien=null;
+const alienColors=[0x8bd450,0xff8fb0,0x6cc7ff,0xc59bff,0xffd166,0xff9f5a];
+
+// пар (частицы)
+const steam=[];
+function spawnSteam(x,y,z,color=0xffffff){
+  for(let i=0;i<10;i++){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.7}));
+    m.position.set(x+(Math.random()-.5)*.6,y,z+(Math.random()-.5)*.6);
+    m.userData={vy:.02+Math.random()*.03,life:1}; scene.add(m); steam.push(m);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  ИГРОВАЯ ЛОГИКА
+// ══════════════════════════════════════════════════════════
+const el=id=>document.getElementById(id);
+let state='menu';
+let coins=0,score=0,combo=1,lives=3;
+let order=null,progress=0,patience=0,patienceMax=0,spawnDelay=0,served=0;
+
+function updateHUD(){
+  el('coins').querySelector('.v').textContent=coins;
+  el('scoreV').textContent=score;
+  el('comboV').textContent='×'+combo;
+  el('livesV').textContent='❤'.repeat(Math.max(0,lives))||'—';
+}
+function buildActions(){
+  const wrap=el('actions'); wrap.innerHTML='';
+  ACT_ORDER.forEach(id=>{
+    const b=document.createElement('div'); b.className='act';
+    b.innerHTML=`<div class="ie">${ACT[id].em}</div><div class="in">${ACT[id].name}</div>`;
+    b.onclick=()=>doAction(id); wrap.appendChild(b);
+  });
+  const serve=document.createElement('div'); serve.className='act'; serve.id='serve';
+  serve.innerHTML=`<div class="ie">🍽️</div><div class="in">Подать</div>`;
+  serve.onclick=doServe; wrap.appendChild(serve);
+}
+function renderSteps(){
+  const s=el('steps'); s.innerHTML='';
+  order.steps.forEach((st,i)=>{
+    const d=document.createElement('div'); d.className='stp'+(i<progress?' done':'');
+    d.textContent=ACT[st].em; s.appendChild(d);
+  });
+  el('serve').classList.toggle('ready',progress>=order.steps.length);
+}
+
+function newOrder(){
+  order=DISHES[Math.floor(Math.random()*DISHES.length)];
+  progress=0;
+  patienceMax=Math.max(7,14-served*0.35); patience=patienceMax;
+  // очистить тарелку
+  plateStack.forEach(m=>plate.remove(m)); plateStack=[];
+  // новый гость
+  if(alien) scene.remove(alien);
+  alien=makeAlien(alienColors[Math.floor(Math.random()*alienColors.length)]);
+  alien.position.set(0,1.5,-3.2); alien.scale.set(0.01,0.01,0.01); scene.add(alien);
+  el('who').textContent='🛸 Гость заказывает:';
+  el('dishEm').textContent=order.em; el('dishName').textContent=order.name;
+  el('order').style.display='block';
+  renderSteps();
+}
+
+function addToPlate(col){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),
+    new THREE.MeshStandardMaterial({color:col,roughness:.4,emissive:new THREE.Color(col).multiplyScalar(0.15)}));
+  m.position.set((plateStack.length-1)*.4-.2, .45+plateStack.length*0.12, 0);
+  m.castShadow=true; plate.add(m); plateStack.push(m);
+}
+function popup(text,color,x,y){
+  const p=document.createElement('div'); p.className='pop'; p.textContent=text; p.style.color=color;
+  p.style.left=(x??innerWidth/2)+'px'; p.style.top=(y??innerHeight/2)+'px';
+  document.body.appendChild(p); setTimeout(()=>p.remove(),1000);
+}
+
+function doAction(id){
+  if(state!=='play'||!order) return;
+  const need=order.steps[progress];
+  if(id===need){
+    progress++; S.step();
+    if(id==='boil'){ spawnSteam(pot.position.x,2,pot.position.z,0xffffff); S.cook(); }
+    if(id==='grill'){ grill.userData.bars.forEach(b=>b.material.emissive.setHex(0xff4400)); spawnSteam(grill.position.x,1.2,grill.position.z,0xff8844); S.cook();
+      setTimeout(()=>grill.userData.bars.forEach(b=>b.material.emissive.setHex(0x000000)),600); }
+    addToPlate(order.col);
+    renderSteps();
+  } else {
+    S.wrong(); combo=1; patience=Math.max(1,patience-1.5); shake();
+    popup('Не то! 😖','#ff6b6b');
+  }
+  updateHUD();
+}
+function doServe(){
+  if(state!=='play'||!order) return;
+  if(progress<order.steps.length){ S.wrong(); popup('Ещё не готово!','#ffb020'); return; }
+  // успех
+  const tip=Math.round(10+patience/patienceMax*15);
+  coins+=tip; score+=100*combo+tip; served++;
+  const pts=100*combo+tip;
+  S.serve(); popup('+'+pts+' 🎉','#34d399');
+  combo=Math.min(combo+1,9);
+  // гость радуется и улетает
+  if(alien) alien.userData={happy:true};
+  el('order').style.display='none';
+  updateHUD();
+  spawnDelay=0.7;
+  order=null;
+}
+function missCustomer(){
+  lives--; S.lose(); combo=1; shake();
+  popup('Гость ушёл 😢','#ff6b8a');
+  if(alien) scene.remove(alien), alien=null;
+  el('order').style.display='none';
+  order=null; updateHUD();
+  if(lives<=0){ endGame(); } else { spawnDelay=0.8; }
+}
+
+let shakeT=0;
+function shake(){ shakeT=0.3; }
+
+// ══════════════════════════════════════════════════════════
+//  ЦИКЛ
+// ══════════════════════════════════════════════════════════
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,0.05); last=now;
+  // анимации сцены
+  planet.rotation.y+=dt*0.05;
+  pot.userData.soup.position.y=1.25+Math.sin(now*0.005)*0.02;
+  plate.rotation.y+=dt*0.5;
+  // пар
+  for(let i=steam.length-1;i>=0;i--){
+    const m=steam[i]; m.position.y+=m.userData.vy; m.userData.life-=dt*0.9;
+    m.material.opacity=Math.max(0,m.userData.life*.7); m.scale.multiplyScalar(1+dt*0.6);
+    if(m.userData.life<=0){ scene.remove(m); steam.splice(i,1); }
+  }
+  // гость
+  if(alien){
+    if(alien.scale.x<1 && !alien.userData?.happy) alien.scale.multiplyScalar(1+dt*6), alien.scale.clampScalar?.(0,1);
+    if(alien.scale.x>1) alien.scale.setScalar(1);
+    alien.position.y=1.5+Math.sin(now*0.003)*0.12;
+    alien.rotation.y=Math.sin(now*0.001)*0.2;
+    if(alien.userData?.happy){ alien.position.z-=dt*8; alien.position.y+=dt*3; alien.rotation.y+=dt*10;
+      if(alien.position.z<-30){ scene.remove(alien); alien=null; } }
+  }
+  // логика
+  if(state==='play'){
+    if(order){
+      patience-=dt; el('pfill').style.width=Math.max(0,patience/patienceMax*100)+'%';
+      if(patience<=0) missCustomer();
+    } else {
+      spawnDelay-=dt; if(spawnDelay<=0) newOrder();
+    }
+  }
+  // тряска камеры
+  if(shakeT>0){ shakeT-=dt; camera.position.x=(Math.random()-.5)*shakeT*2; }
+  else camera.position.x*=0.9;
+  renderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ══════════════════════════════════════════════════════════
+//  ЭКРАНЫ
+// ══════════════════════════════════════════════════════════
+function startGame(){
+  ac(); state='play';
+  coins=0;score=0;combo=1;lives=3;served=0;order=null;spawnDelay=0.4;
+  plateStack.forEach(m=>plate.remove(m)); plateStack=[];
+  if(alien){scene.remove(alien);alien=null;}
+  updateHUD(); buildActions();
+  el('start').classList.add('hidden'); el('go').classList.add('hidden');
+}
+async function endGame(){
+  state='over'; el('order').style.display='none';
+  el('goScore').textContent=score;
+  el('goSub').textContent=`очков · ${coins} 💰 чаевых · ${served} блюд`;
+  el('go').classList.remove('hidden');
+  el('nameInput').value=localStorage.getItem('chorno_name')||'';
+  el('lbnote').textContent = LEADERBOARD_URL ? 'Онлайн-рекорды включены 🌐' : 'Рекорды сохраняются на этом устройстве. Онлайн можно включить в коде.';
+  renderLB(await fetchScores(), null);
+}
+function renderLB(list,meName){
+  const box=el('lbrows'); box.innerHTML='';
+  if(!list.length){ box.innerHTML='<div class="lbrow"><span class="nm" style="color:rgba(255,255,255,.4)">Пока пусто — будь первой!</span></div>'; return; }
+  list.forEach((r,i)=>{
+    const row=document.createElement('div');
+    row.className='lbrow'+(meName&&r.name===meName&&r.score===score?' me':'');
+    row.innerHTML=`<span class="rk">${i+1}.</span><span class="nm">${(r.name||'—').replace(/[<>]/g,'')}</span><span>${r.score}</span>`;
+    box.appendChild(row);
+  });
+}
+
+el('playBtn').onclick=()=>{ S.click(); startGame(); };
+el('againBtn').onclick=()=>{ S.click(); startGame(); };
+el('saveBtn').onclick=async()=>{
+  const name=(el('nameInput').value.trim()||'Аноним').slice(0,12);
+  localStorage.setItem('chorno_name',name);
+  S.click(); el('saveBtn').disabled=true; el('saveBtn').textContent='✓';
+  renderLB(await submitScore(name,score), name);
+};
+</script>
+</body>
+</html>
