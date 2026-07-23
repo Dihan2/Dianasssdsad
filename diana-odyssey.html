@@ -2435,5 +2435,15 @@ startIntro();
 updateHUD();
 requestAnimationFrame(loop);
 </script>
+<script>
+window.MOBILE_CONFIG = {
+  joystick: true,
+  buttons: [
+    { code:'KeyE',  label:'✋', color:'#ff69b4' },   // взаимодействие
+    { code:'Space', label:'⤴', color:'#06b6d4' }    // прыжок
+  ]
+};
+</script>
+<script src="mobile-controls.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ABYSS WALKER</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
@@ -1612,5 +1612,12 @@ document.addEventListener('keydown',e=>{
 showScreen('screen-start');
 requestAnimationFrame(loop);
 </script>
+<script>
+window.MOBILE_CONFIG = {
+  joystick: true,
+  buttons: [{ code:'Space', label:'⚡', color:'#7c3aed' }]   // рывок
+};
+</script>
+<script src="mobile-controls.js"></script>
 </body>
 </html>
