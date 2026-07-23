@@ -488,7 +488,7 @@ document.getElementById('intro-skip').addEventListener('click', () => {
 //  ROOM STATE
 // ═══════════════════════════════════════
 const ROOM = {
-  width: 1560,
+  width: 1660,
   height: 500,
   floorY: 380,
   petX: 200, petY: 380,
@@ -513,6 +513,7 @@ const ROOM = {
     { id:'abyss', x:1050, y:210, w:60, h:170, label:'🌀 Портал Бездны', hint:'E — Abyss Walker' },
     { id:'shop', x:1200, y:250, w:80, h:130, label:'🛒 Магазин', hint:'E — питомцы' },
     { id:'resto', x:1380, y:210, w:90, h:170, label:'🦞 Ресторан', hint:'E — Чорноморка' },
+    { id:'rocket', x:1490, y:150, w:80, h:230, label:'🚀 Ракета', hint:'E — Космо-полёт 3D' },
   ],
   nearObj: null,
   stepTimer: 0,
@@ -1001,6 +1002,36 @@ function drawRoom(){
   X.fillStyle = `rgba(255,120,90,${neon})`; X.font='10px Fredoka';
   X.fillText('ЧОРНОМОРКА', rst.x+rst.w/2, rst.y+rst.h-8);
 
+  // Ракета — Космо-полёт 3D
+  const rk = R.objects.find(o=>o.id==='rocket');
+  const rcx = rk.x+rk.w/2;
+  // корпус
+  X.fillStyle = '#e8ecff'; X.beginPath();
+  X.moveTo(rcx, rk.y);                          // нос
+  X.lineTo(rk.x+rk.w-14, rk.y+70);
+  X.lineTo(rk.x+rk.w-14, rk.y+rk.h-40);
+  X.lineTo(rk.x+14, rk.y+rk.h-40);
+  X.lineTo(rk.x+14, rk.y+70);
+  X.closePath(); X.fill();
+  // носовой конус
+  X.fillStyle = '#ff6b8a'; X.beginPath();
+  X.moveTo(rcx, rk.y); X.lineTo(rk.x+rk.w-14, rk.y+70); X.lineTo(rk.x+14, rk.y+70); X.closePath(); X.fill();
+  // иллюминатор
+  X.fillStyle = '#06b6d4'; X.beginPath(); X.arc(rcx, rk.y+110, 15, 0, Math.PI*2); X.fill();
+  X.strokeStyle = '#b8c0e0'; X.lineWidth=3; X.stroke();
+  // крылья
+  X.fillStyle = '#ff6b8a';
+  X.beginPath(); X.moveTo(rk.x+14,rk.y+rk.h-70); X.lineTo(rk.x-6,rk.y+rk.h-30); X.lineTo(rk.x+14,rk.y+rk.h-40); X.fill();
+  X.beginPath(); X.moveTo(rk.x+rk.w-14,rk.y+rk.h-70); X.lineTo(rk.x+rk.w+6,rk.y+rk.h-30); X.lineTo(rk.x+rk.w-14,rk.y+rk.h-40); X.fill();
+  // огонь из дюз (анимация)
+  const fl = 20 + Math.sin(performance.now()/90)*10;
+  X.fillStyle = '#fbbf24'; X.beginPath();
+  X.moveTo(rk.x+18,rk.y+rk.h-40); X.lineTo(rcx,rk.y+rk.h-40+fl); X.lineTo(rk.x+rk.w-18,rk.y+rk.h-40); X.closePath(); X.fill();
+  X.fillStyle = '#ff785a'; X.beginPath();
+  X.moveTo(rk.x+26,rk.y+rk.h-40); X.lineTo(rcx,rk.y+rk.h-40+fl*0.6); X.lineTo(rk.x+rk.w-26,rk.y+rk.h-40); X.closePath(); X.fill();
+  X.fillStyle = '#60a5fa'; X.font='10px Fredoka'; X.textAlign='center';
+  X.fillText('🚀 ПОЛЁТ 3D', rcx, rk.y-8);
+
   // Питомец Дианы
   if(activePet && activePet !== 'none'){
     const pet = PETS.find(p=>p.id===activePet);
@@ -1117,6 +1148,10 @@ function tryInteract(){
       case 'resto':
         sfx('door');
         location.href = 'chornomorka.html';
+        break;
+      case 'rocket':
+        sfx('door');
+        location.href = 'space-3d.html';
         break;
     }
   }

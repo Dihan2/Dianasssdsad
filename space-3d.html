@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🚀 Космо-полёт 3D — Poop Odyssey</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Fredoka',sans-serif;color:#fff;background:#03010c;
+  user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{display:block}
+#app{position:fixed;inset:0}
+#home{position:fixed;top:12px;left:12px;z-index:60;background:rgba(124,58,237,.85);color:#fff;
+  font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:12px}
+
+#hud{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:20px;
+  background:rgba(10,4,30,.5);padding:8px 22px;border-radius:20px;border:1px solid rgba(255,255,255,.1);
+  backdrop-filter:blur(6px);pointer-events:none}
+.st{text-align:center;line-height:1.1}
+.st .v{font-size:22px;font-weight:700}
+.st .l{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px}
+#stars .v{color:#fbbf24}
+#dist .v{color:#06b6d4}
+#lives .v{color:#ff6b8a}
+
+.screen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:24px;
+  background:radial-gradient(ellipse at 50% 25%,#1a0740 0%,#08001c 60%,#040010 100%)}
+.screen h1{font-size:clamp(28px,6vw,48px);font-weight:700;
+  background:linear-gradient(90deg,#ff69b4,#fbbf24,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tag{color:rgba(255,255,255,.6);margin-top:8px;font-size:16px;max-width:460px}
+.btn{margin-top:22px;font-size:18px;font-weight:600;padding:14px 40px;border:none;border-radius:18px;cursor:pointer;
+  background:linear-gradient(90deg,#ff69b4,#7c3aed);color:#fff;box-shadow:0 8px 26px rgba(124,58,237,.45);transition:transform .15s}
+.btn:hover{transform:translateY(-3px)}
+.hint{margin-top:18px;font-size:13px;color:rgba(255,255,255,.42);line-height:1.7;max-width:420px}
+.big{font-size:52px;font-weight:700;color:#fbbf24;margin-top:6px}
+.hidden{display:none!important}
+.pop{position:fixed;z-index:30;pointer-events:none;font-weight:700;font-size:22px;
+  text-shadow:0 2px 8px rgba(0,0,0,.6);animation:rise 1s ease-out forwards}
+@keyframes rise{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+#flash{position:fixed;inset:0;z-index:25;background:#ff2a5a;opacity:0;pointer-events:none;transition:opacity .1s}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<a id="home" href="index.html">🏠 В меню</a>
+<div id="flash"></div>
+
+<div id="hud">
+  <div class="st" id="stars"><div class="v">0</div><div class="l">⭐ ЗВЁЗДЫ</div></div>
+  <div class="st" id="dist"><div class="v">0</div><div class="l">КМ</div></div>
+  <div class="st" id="lives"><div class="v">🛡🛡🛡</div><div class="l">ЩИТ</div></div>
+</div>
+
+<div class="screen" id="start">
+  <h1>🚀 Космо-полёт</h1>
+  <div class="tag">Какашка-кораблик мчится сквозь галактику! Собирай ⭐ звёзды и уворачивайся от астероидов ☄️. Чем дальше — тем быстрее!</div>
+  <button class="btn" id="playBtn">Полетели! ✨</button>
+  <div class="hint">🖱️ Веди мышкой / пальцем, чтобы рулить · или <b>WASD / стрелки</b><br>Собирай звёзды · не врезайся в астероиды и планеты</div>
+</div>
+
+<div class="screen hidden" id="go">
+  <h1>Бум! 💥</h1>
+  <div class="big" id="goStars">0 ⭐</div>
+  <div class="tag" id="goSub">пройдено 0 км</div>
+  <button class="btn" id="againBtn">Ещё раз 🔁</button>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const el=id=>document.getElementById(id);
+// ── АУДИО ──
+let AC=null; const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+function beep(f,d=.1,t='sine',v=.2){try{const a=ac(),o=a.createOscillator(),g=a.createGain();
+  o.type=t;o.frequency.value=f;o.connect(g);g.connect(a.destination);
+  g.gain.setValueAtTime(v,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);
+  o.start();o.stop(a.currentTime+d);}catch(e){}}
+const S={star:()=>{beep(880,.09,'sine',.22);setTimeout(()=>beep(1320,.09,'sine',.18),60);},
+  crash:()=>{beep(120,.3,'sawtooth',.3);},click:()=>beep(700,.06,'sine',.15)};
+
+// ── СЦЕНА ──
+const app=el('app');
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x0a0322,0.018);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.1,300);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+app.appendChild(renderer.domElement);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);});
+
+scene.add(new THREE.AmbientLight(0x9090ff,0.8));
+const dl=new THREE.DirectionalLight(0xffffff,1.0); dl.position.set(2,4,5); scene.add(dl);
+const pink=new THREE.PointLight(0xff69b4,1,60); pink.position.set(-8,4,-10); scene.add(pink);
+const cyan=new THREE.PointLight(0x06b6d4,1,60); cyan.position.set(8,-4,-15); scene.add(cyan);
+
+// звёздное поле (фон)
+function starfield(n,spread,depth,size,color){
+  const g=new THREE.BufferGeometry(),p=new Float32Array(n*3);
+  for(let i=0;i<n;i++){p[i*3]=(Math.random()-.5)*spread;p[i*3+1]=(Math.random()-.5)*spread;p[i*3+2]=-Math.random()*depth;}
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,transparent:true,opacity:.9}));
+  scene.add(pts); return pts;
+}
+const sf1=starfield(600,120,240,0.5,0xffffff);
+const sf2=starfield(300,160,240,0.9,0xffd0f0);
+
+// планеты (декор, далеко)
+const decoPlanets=[];
+function addPlanet(x,y,z,r,col,emi){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,24),
+    new THREE.MeshStandardMaterial({color:col,emissive:emi,roughness:.9}));
+  m.position.set(x,y,z); scene.add(m); decoPlanets.push(m); return m;
+}
+addPlanet(-30,14,-120,12,0x8b5cf6,0x2a1a4a);
+addPlanet(34,-16,-160,16,0x0ea5b7,0x06333a);
+addPlanet(18,22,-90,7,0xff9f5a,0x3a1e0a);
+
+// ── КОРАБЛИК-КАКАШКА ──
+function makePoop(){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0x7a4a24,roughness:.6});
+  const tiers=[[0,-0.15,0,0.85],[0,0.35,0,0.62],[0,0.78,0,0.4]];
+  tiers.forEach(([x,y,z,r])=>{const s=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),mat);
+    s.scale.y=0.8; s.position.set(x,y,z); g.add(s);});
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.18,0.4,16),mat); tip.position.y=1.15; g.add(tip);
+  // глаза
+  const white=new THREE.MeshStandardMaterial({color:0xffffff});
+  const black=new THREE.MeshStandardMaterial({color:0x111});
+  for(const dx of[-0.22,0.22]){
+    const e=new THREE.Mesh(new THREE.SphereGeometry(0.16,12,12),white); e.position.set(dx,0.42,0.5); g.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(0.08,10,10),black); p.position.set(dx,0.42,0.63); g.add(p);
+  }
+  // улыбка
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(0.16,0.03,8,16,Math.PI),
+    new THREE.MeshStandardMaterial({color:0x111})); smile.position.set(0,0.2,0.56); smile.rotation.z=Math.PI; g.add(smile);
+  return g;
+}
+const ship=makePoop();
+scene.add(ship);
+// реактивная струя
+const jet=new THREE.Mesh(new THREE.ConeGeometry(0.3,1.1,12),
+  new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.7}));
+jet.position.set(0,-0.7,0.2); jet.rotation.x=Math.PI; ship.add(jet);
+
+camera.position.set(0,1.6,6);
+
+// ── ОБЪЕКТЫ (звёзды, астероиды) ──
+const stars=[], rocks=[];
+const starGeo=new THREE.IcosahedronGeometry(0.45,0);
+const starMat=new THREE.MeshStandardMaterial({color:0xffd633,emissive:0xaa7700,metalness:.3,roughness:.3});
+function spawnStar(z){
+  const m=new THREE.Mesh(starGeo,starMat);
+  m.position.set((Math.random()-.5)*11,(Math.random()-.5)*7,z);
+  m.userData.spin=Math.random()*0.1+0.03; scene.add(m); stars.push(m);
+}
+const rockMat=new THREE.MeshStandardMaterial({color:0x8a7f74,roughness:1,flatShading:true});
+function spawnRock(z){
+  const r=0.7+Math.random()*1.3;
+  const m=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),rockMat);
+  m.position.set((Math.random()-.5)*12,(Math.random()-.5)*8,z);
+  m.userData={rr:r,rx:Math.random()*0.04,ry:Math.random()*0.04}; scene.add(m); rocks.push(m);
+}
+
+// ── ВВОД ──
+const target={x:0,y:1.2};
+const keys={};
+addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='Space')e.preventDefault();});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+function pointer(cx,cy){
+  const nx=(cx/innerWidth)*2-1, ny=(cy/innerHeight)*2-1;
+  target.x=nx*6.2; target.y=1.2 - ny*4.2;
+}
+addEventListener('pointermove',e=>{ if(state==='play') pointer(e.clientX,e.clientY); });
+
+// ── ИГРА ──
+let state='menu';
+let starCount=0,dist=0,lives=3,speed=26,invuln=0;
+function updHUD(){ el('stars').querySelector('.v').textContent=starCount;
+  el('dist').querySelector('.v').textContent=Math.floor(dist);
+  el('lives').querySelector('.v').textContent='🛡'.repeat(Math.max(0,lives))||'—'; }
+function popup(t,c,x,y){const p=document.createElement('div');p.className='pop';p.textContent=t;p.style.color=c;
+  p.style.left=(x??innerWidth/2)+'px';p.style.top=(y??innerHeight*0.4)+'px';
+  document.body.appendChild(p);setTimeout(()=>p.remove(),1000);}
+function flash(){const f=el('flash');f.style.opacity=.5;setTimeout(()=>f.style.opacity=0,90);}
+
+function reset(){
+  [...stars,...rocks].forEach(m=>scene.remove(m)); stars.length=0; rocks.length=0;
+  starCount=0;dist=0;lives=3;speed=26;invuln=0;
+  ship.position.set(0,1.2,0); target.x=0;target.y=1.2;
+  for(let i=0;i<10;i++){ spawnStar(-20-i*12); if(i%2) spawnRock(-26-i*12); }
+  updHUD();
+}
+function startGame(){ ac(); reset(); state='play'; el('start').classList.add('hidden'); el('go').classList.add('hidden'); }
+function endGame(){ state='over'; S.crash();
+  el('goStars').textContent=starCount+' ⭐';
+  el('goSub').textContent='пройдено '+Math.floor(dist)+' км · собрано '+starCount+' звёзд';
+  el('go').classList.remove('hidden'); }
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,0.05); last=now;
+  requestAnimationFrame(loop);
+
+  // фон крутится/дышит
+  sf1.rotation.z+=dt*0.01; sf2.rotation.z-=dt*0.015;
+  decoPlanets.forEach(p=>p.rotation.y+=dt*0.08);
+  jet.scale.y=0.8+Math.sin(now*0.03)*0.3; jet.material.opacity=.5+Math.random()*0.3;
+
+  if(state==='play'){
+    speed+=dt*0.6; dist+=speed*dt*0.1;
+    // клавиши
+    if(keys.ArrowLeft||keys.KeyA) target.x-=dt*9;
+    if(keys.ArrowRight||keys.KeyD) target.x+=dt*9;
+    if(keys.ArrowUp||keys.KeyW) target.y+=dt*7;
+    if(keys.ArrowDown||keys.KeyS) target.y-=dt*7;
+    target.x=Math.max(-6.2,Math.min(6.2,target.x)); target.y=Math.max(-3,Math.min(5.4,target.y));
+    // движение корабля (плавно) + наклон
+    ship.position.x+=(target.x-ship.position.x)*Math.min(1,dt*8);
+    ship.position.y+=(target.y-ship.position.y)*Math.min(1,dt*8);
+    ship.rotation.z=(ship.position.x-target.x)*0.15 - (target.x-ship.position.x)*0.25;
+    ship.rotation.x=(target.y-ship.position.y)*0.15;
+    ship.rotation.y+=dt*0.5;
+    // камера мягко следует (корабль сам стоит на z≈0, мир летит навстречу)
+    camera.position.x+=(ship.position.x*0.4-camera.position.x)*dt*4;
+    camera.position.y+=((ship.position.y*0.3+1.6)-camera.position.y)*dt*4;
+    camera.lookAt(ship.position.x*0.5,ship.position.y*0.5+0.5,-8);
+
+    if(invuln>0) invuln-=dt;
+    ship.visible = !(invuln>0 && Math.floor(now/80)%2);
+
+    const move=speed*dt;
+    // звёзды
+    for(let i=stars.length-1;i>=0;i--){
+      const m=stars[i]; m.position.z+=move; m.rotation.y+=m.userData.spin; m.rotation.x+=m.userData.spin*.6;
+      if(m.position.distanceTo(ship.position)<1.1){
+        starCount++; S.star(); popup('+1 ⭐','#fbbf24',innerWidth/2,innerHeight*0.35);
+        scene.remove(m); stars.splice(i,1); spawnStar(-150-Math.random()*40); updHUD(); continue;
+      }
+      if(m.position.z>10){ scene.remove(m); stars.splice(i,1); spawnStar(-150-Math.random()*40); }
+    }
+    // астероиды
+    for(let i=rocks.length-1;i>=0;i--){
+      const m=rocks[i]; m.position.z+=move; m.rotation.x+=m.userData.rx; m.rotation.y+=m.userData.ry;
+      if(invuln<=0 && m.position.distanceTo(ship.position) < m.userData.rr+0.8){
+        lives--; invuln=1.5; flash(); S.crash(); popup('💥','#ff6b6b',innerWidth/2,innerHeight*0.4);
+        scene.remove(m); rocks.splice(i,1); updHUD();
+        if(lives<=0){ endGame(); }
+        continue;
+      }
+      if(m.position.z>12){ scene.remove(m); rocks.splice(i,1); }
+    }
+    // подсев астероидов по мере ускорения
+    if(rocks.length<6+Math.floor(dist/40)) spawnRock(-160-Math.random()*60);
+    updHUD();
+  }
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(loop);
+
+el('playBtn').onclick=()=>{ S.click(); startGame(); };
+el('againBtn').onclick=()=>{ S.click(); startGame(); };
+</script>
+</body>
+</html>
