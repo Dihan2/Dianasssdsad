@@ -173,26 +173,41 @@ canvas{display:block}
 import * as THREE from 'three';
 
 // ══════════════════════════════════════════════════════════
-//  ЛИДЕРБОРД  (локальный сейчас; онлайн — если задать URL ниже)
+//  ЛИДЕРБОРД  (локальный + опциональный ОНЛАЙН через Supabase)
 // ══════════════════════════════════════════════════════════
-// Чтобы включить ОНЛАЙН-рекорды: подними бесплатный бэкенд
-// (Firebase / Supabase / свой мини-сервер) и впиши сюда адрес,
-// который принимает {name,score} на POST и отдаёт [{name,score}] на GET.
-const LEADERBOARD_URL = null;   // напр. 'https://xxxx.supabase.co/rest/v1/scores'
+// Работает СРАЗУ локально (на этом устройстве).
+// Чтобы включить ОБЩИЙ онлайн-рекорд — заведи бесплатный проект на
+// supabase.com и впиши сюда URL и anon-ключ (инструкция в ONLINE-SETUP.md):
+const SB = {
+  url:  '',   // напр. 'https://abcdxyz.supabase.co'
+  key:  '',   // публичный anon-ключ (Project Settings → API)
+  table:'scores',
+};
+const ONLINE = !!(SB.url && SB.key);
 
 async function fetchScores(){
-  if(LEADERBOARD_URL){
-    try{ const r=await fetch(LEADERBOARD_URL); if(r.ok) return (await r.json()).slice(0,10); }catch(e){}
+  if(ONLINE){
+    try{
+      const r=await fetch(`${SB.url}/rest/v1/${SB.table}?select=name,score&order=score.desc&limit=10`,
+        {headers:{apikey:SB.key,Authorization:'Bearer '+SB.key}});
+      if(r.ok) return await r.json();
+    }catch(e){}
   }
   try{ return JSON.parse(localStorage.getItem('chorno_lb')||'[]'); }catch(e){ return []; }
 }
 async function submitScore(name,score){
+  // локально всегда
   const local=(()=>{try{return JSON.parse(localStorage.getItem('chorno_lb')||'[]')}catch(e){return[]}})();
   local.push({name,score}); local.sort((a,b)=>b.score-a.score);
   const top=local.slice(0,10);
   localStorage.setItem('chorno_lb',JSON.stringify(top));
-  if(LEADERBOARD_URL){
-    try{ await fetch(LEADERBOARD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,score})}); }catch(e){}
+  if(ONLINE){
+    try{
+      await fetch(`${SB.url}/rest/v1/${SB.table}`,{method:'POST',
+        headers:{apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json'},
+        body:JSON.stringify({name,score})});
+      const fresh=await fetchScores(); if(fresh.length) return fresh;
+    }catch(e){}
   }
   return top;
 }
@@ -601,7 +616,7 @@ async function endGame(){
   el('goSub').textContent=`очков · ${coins} 💰 чаевых · ${served} блюд`;
   el('go').classList.remove('hidden');
   el('nameInput').value=localStorage.getItem('chorno_name')||'';
-  el('lbnote').textContent = LEADERBOARD_URL ? 'Онлайн-рекорды включены 🌐' : 'Рекорды сохраняются на этом устройстве. Онлайн можно включить в коде.';
+  el('lbnote').textContent = ONLINE ? '🌐 Онлайн-рекорды включены — виден всем игрокам!' : 'Рекорды сохраняются на этом устройстве. Онлайн включается в ONLINE-SETUP.md';
   renderLB(await fetchScores(), null);
 }
 function renderLB(list,meName){
