@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💩 Poop Odyssey — Для Дианы</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08001a;overflow:hidden;font-family:'Fredoka',sans-serif;color:#fff;user-select:none}
+canvas{display:block;position:fixed;top:0;left:0}
+
+/* ─── SCREENS ─── */
+.screen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .6s;pointer-events:all}
+.screen.hidden{opacity:0;pointer-events:none}
+
+/* ─── INTRO ─── */
+#intro{background:radial-gradient(ellipse at 50% 50%,#1a0040,#08001a)}
+.intro-hello{font-size:clamp(28px,6vw,64px);font-weight:700;opacity:0;transform:translateY(30px);transition:all 1s ease-out;letter-spacing:2px}
+.intro-hello.show{opacity:1;transform:translateY(0)}
+.intro-name{font-size:clamp(44px,10vw,100px);font-weight:700;background:linear-gradient(135deg,#ff69b4,#c084fc,#38bdf8,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;transform:scale(.5);transition:all 1.2s cubic-bezier(.34,1.56,.64,1);margin-top:8px}
+.intro-name.show{opacity:1;transform:scale(1)}
+.intro-poop{font-size:clamp(60px,14vw,140px);opacity:0;transition:all 1s ease-out;margin-top:20px;animation:none;filter:drop-shadow(0 0 30px rgba(255,105,180,.5))}
+.intro-poop.show{opacity:1;animation:poopBounce 1.5s ease-in-out infinite}
+@keyframes poopBounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-15px) rotate(3deg)}}
+.intro-sub{font-size:clamp(14px,2.5vw,22px);color:rgba(255,255,255,.5);margin-top:24px;opacity:0;transition:opacity 1s;letter-spacing:4px}
+.intro-sub.show{opacity:1}
+.intro-skip{position:absolute;bottom:40px;font-size:16px;color:rgba(255,255,255,.3);cursor:pointer;padding:12px 32px;border:1px solid rgba(255,255,255,.1);border-radius:20px;transition:all .3s}
+.intro-skip:hover{color:#fff;border-color:rgba(255,105,180,.5);background:rgba(255,105,180,.1)}
+
+/* ─── ROOM HUD ─── */
+#hud{position:fixed;top:0;left:0;width:100%;z-index:50;padding:12px 20px;display:none;pointer-events:none}
+#hud-stars{font-size:20px;text-shadow:0 0 12px rgba(251,191,36,.6)}
+#hud-hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;font-size:14px;color:rgba(255,255,255,.4);letter-spacing:2px;display:none;transition:opacity .3s;text-align:center;pointer-events:none;padding:8px 20px;background:rgba(0,0,0,.4);border-radius:12px}
+#interaction-prompt{position:fixed;z-index:55;display:none;font-size:15px;color:#fbbf24;text-shadow:0 0 10px rgba(251,191,36,.6);pointer-events:none;text-align:center;transform:translateX(-50%)}
+#level-transition{position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;background:#08001a;display:none;flex-direction:column;align-items:center;justify-content:center}
+#level-transition .lt-text{font-size:clamp(24px,5vw,48px);font-weight:700;letter-spacing:4px}
+#level-transition .lt-sub{font-size:16px;color:rgba(255,255,255,.4);margin-top:12px}
+
+/* ─── VIDEO OVERLAY ─── */
+#video-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(8px)}
+#video-container{width:min(90vw,640px);aspect-ratio:16/9;background:#000;border-radius:16px;overflow:hidden;box-shadow:0 0 60px rgba(124,58,237,.4);border:2px solid rgba(124,58,237,.3);position:relative}
+#video-container iframe,#video-container video{width:100%;height:100%;border:none}
+#video-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:repeating-linear-gradient(0deg,#111 0px,#111 2px,#181818 2px,#181818 4px);color:rgba(255,255,255,.3);font-size:14px}
+#video-placeholder .vp-icon{font-size:60px;margin-bottom:16px;animation:static .15s infinite}
+@keyframes static{0%{opacity:.7}50%{opacity:.4}100%{opacity:.7}}
+#video-close{margin-top:20px;font-size:15px;color:rgba(255,255,255,.5);cursor:pointer;padding:10px 28px;border:1px solid rgba(255,255,255,.15);border-radius:14px;transition:all .3s}
+#video-close:hover{color:#fff;border-color:#ff69b4;background:rgba(255,105,180,.15)}
+
+/* ─── PAUSE ─── */
+#pause-menu{position:fixed;top:0;left:0;width:100%;height:100%;z-index:160;background:rgba(8,0,26,.9);display:none;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(6px)}
+#pause-menu .pm-title{font-size:36px;font-weight:700;margin-bottom:8px}
+.pm-btn{font-size:16px;padding:14px 40px;margin:8px;border:1px solid rgba(255,255,255,.15);border-radius:16px;background:rgba(255,255,255,.04);color:#fff;cursor:pointer;transition:all .3s;min-width:200px;text-align:center}
+.pm-btn:hover{border-color:#c084fc;background:rgba(192,132,252,.12);transform:scale(1.04)}
+
+/* ─── LEVEL COMPLETE ─── */
+#level-complete{position:fixed;top:0;left:0;width:100%;height:100%;z-index:170;background:rgba(8,0,26,.92);display:none;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(6px)}
+#level-complete .lc-title{font-size:clamp(28px,6vw,52px);font-weight:700;background:linear-gradient(135deg,#fbbf24,#ff69b4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#level-complete .lc-stars{font-size:48px;margin:20px 0;letter-spacing:8px}
+.lc-btn{font-size:16px;padding:14px 40px;margin:8px;border:1px solid rgba(251,191,36,.3);border-radius:16px;background:rgba(251,191,36,.06);color:#fbbf24;cursor:pointer;transition:all .3s}
+.lc-btn:hover{border-color:#fbbf24;background:rgba(251,191,36,.15);transform:scale(1.04)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="home-btn" style="position:fixed;top:14px;right:14px;z-index:300;display:none;cursor:pointer;font-size:14px;font-weight:600;padding:9px 16px;border-radius:14px;background:rgba(124,58,237,.85);border:1px solid rgba(192,132,252,.6);box-shadow:0 4px 16px rgba(124,58,237,.5);pointer-events:auto">🏠 В комнату</div>
+<div id="music-btn" style="position:fixed;top:14px;right:150px;z-index:300;display:none;cursor:pointer;font-size:18px;width:40px;height:40px;border-radius:50%;background:rgba(124,58,237,.6);display:none;align-items:center;justify-content:center;pointer-events:auto">🔊</div>
+
+<!-- INTRO -->
+<div class="screen" id="intro">
+  <div class="intro-hello" id="ih1">Привет 👋</div>
+  <div class="intro-name" id="ih2">Диана</div>
+  <div class="intro-poop" id="ih3">💩</div>
+  <div class="intro-sub" id="ih4">✨ Это твоя персональная игра ✨</div>
+  <div class="intro-skip" id="intro-skip">Нажми чтобы начать</div>
+</div>
+
+<!-- HUD -->
+<div id="hud"><span id="hud-stars">⭐ 0</span></div>
+<div id="hud-hint">WASD / Стрелки — ходить &nbsp;·&nbsp; E — взаимодействовать &nbsp;·&nbsp; 🪟 окно &nbsp;·&nbsp; 🛒 магазин &nbsp;·&nbsp; 🕹️ игры</div>
+<div id="interaction-prompt"></div>
+
+<!-- LEVEL TRANSITION -->
+<div id="level-transition">
+  <div class="lt-text" id="lt-text"></div>
+  <div class="lt-sub" id="lt-sub"></div>
+</div>
+
+<!-- VIDEO OVERLAY -->
+<div id="video-overlay">
+  <div id="video-container">
+    <iframe id="video-frame" src="" title="Видео для Дианы"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  </div>
+  <div id="video-close">✕ Закрыть</div>
+</div>
+
+<!-- PAUSE -->
+<div id="pause-menu">
+  <div class="pm-title">⏸️ Пауза</div>
+  <div class="pm-btn" id="pm-resume">▶️ Продолжить</div>
+  <div class="pm-btn" id="pm-room">🏠 В комнату</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:400;opacity:0;transition:all .35s;pointer-events:none;background:rgba(124,58,237,.92);border:1px solid rgba(192,132,252,.7);padding:10px 22px;border-radius:16px;font-size:15px;font-weight:600;box-shadow:0 6px 24px rgba(124,58,237,.5)"></div>
+
+<!-- SHOP -->
+<div id="shop-overlay" style="position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;background:rgba(8,0,26,.9);backdrop-filter:blur(8px)">
+  <div style="width:min(560px,92vw);max-height:88vh;overflow-y:auto;background:linear-gradient(160deg,#1a0840,#0d0424);border:1px solid rgba(192,132,252,.5);border-radius:24px;padding:24px;box-shadow:0 0 60px rgba(124,58,237,.5)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:26px;font-weight:700">🛒 Магазин питомцев</div>
+      <div id="shop-close" style="cursor:pointer;font-size:22px;padding:4px 12px;border-radius:12px;background:rgba(255,255,255,.08)">✕</div>
+    </div>
+    <div style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:16px">Твои звёзды: <span id="shop-stars" style="color:#fbbf24;font-weight:700"></span> ⭐ · Питомец будет ходить за тобой в комнате 💕</div>
+    <div id="shop-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px"></div>
+  </div>
+</div>
+
+<!-- SPACE VIEW UI -->
+<div id="space-ui" style="position:fixed;inset:0;z-index:120;display:none;pointer-events:none">
+  <div id="space-title" style="position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:clamp(16px,3vw,26px);font-weight:700;text-shadow:0 0 16px rgba(192,132,252,.8);text-align:center"></div>
+  <div id="space-back" style="position:absolute;top:18px;left:18px;pointer-events:auto;cursor:pointer;font-size:15px;padding:10px 20px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(8,0,26,.6)">← Назад</div>
+  <div id="earth-controls" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:none;gap:10px;pointer-events:auto">
+    <div class="ez" id="ez-out" style="cursor:pointer;width:52px;height:52px;border-radius:50%;background:rgba(56,189,248,.2);border:1px solid rgba(56,189,248,.5);display:flex;align-items:center;justify-content:center;font-size:26px">−</div>
+    <div id="earth-hint" style="align-self:center;font-size:12px;color:rgba(255,255,255,.5);padding:0 10px">🖱️ Тяни чтобы крутить</div>
+    <div class="ez" id="ez-in" style="cursor:pointer;width:52px;height:52px;border-radius:50%;background:rgba(56,189,248,.2);border:1px solid rgba(56,189,248,.5);display:flex;align-items:center;justify-content:center;font-size:26px">+</div>
+  </div>
+  <div id="space-card" style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:none;pointer-events:auto;width:min(420px,88vw);background:rgba(15,5,40,.92);border:1px solid rgba(192,132,252,.5);border-radius:18px;padding:18px 20px;box-shadow:0 0 40px rgba(124,58,237,.4)">
+    <div id="card-name" style="font-size:22px;font-weight:700;margin-bottom:8px"></div>
+    <div id="card-fact" style="font-size:14px;line-height:1.5;color:rgba(255,255,255,.85)"></div>
+    <div id="card-action" style="margin-top:12px"></div>
+  </div>
+  <!-- Панель информации о планете -->
+  <div id="planet-panel" style="position:absolute;top:50%;right:24px;transform:translateY(-50%);display:none;pointer-events:auto;width:min(320px,84vw);background:rgba(15,5,40,.9);border:1px solid rgba(192,132,252,.5);border-radius:20px;padding:20px;box-shadow:0 0 40px rgba(124,58,237,.4);backdrop-filter:blur(6px)">
+    <div id="pp-name" style="font-size:26px;font-weight:700;margin-bottom:4px"></div>
+    <div id="pp-fact" style="font-size:13px;line-height:1.5;color:rgba(255,255,255,.8);margin-bottom:14px"></div>
+    <div id="pp-stats"></div>
+    <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.4)">🖱️ Тяни планету, чтобы покрутить · колёсико = зум</div>
+  </div>
+</div>
+
+<!-- LEVEL COMPLETE -->
+<div id="level-complete">
+  <div class="lc-title" id="lc-title">Уровень пройден</div>
+  <div class="lc-stars" id="lc-stars">⭐⭐⭐</div>
+  <div class="lc-btn" id="lc-next">Далее →</div>
+  <div class="lc-btn" id="lc-room" style="border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.5)">В комнату</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  CANVAS & GLOBALS
+// ═══════════════════════════════════════
+const C = document.getElementById('c');
+const X = C.getContext('2d');
+let W, H;
+function resize(){ W = C.width = innerWidth; H = C.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+
+const KEYS = {};
+addEventListener('keydown', e => {
+  KEYS[e.code] = true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if(e.code === 'Escape') togglePause();
+  if(e.code === 'KeyE' && !paused) tryInteract();
+});
+addEventListener('keyup', e => KEYS[e.code] = false);
+
+let gameState = 'intro'; // intro, room, level, levelComplete
+let paused = false;
+let totalStars = 0;
+let lastTime = 0;
+
+// Load save
+let ownedPets = ['none'];
+let activePet = 'none';
+try {
+  const sv = JSON.parse(localStorage.getItem('poop_odyssey_save') || '{}');
+  totalStars = sv.stars || 0;
+  ownedPets = sv.pets || ['none'];
+  activePet = sv.activePet || 'none';
+} catch(e){}
+function save(){ try{ localStorage.setItem('poop_odyssey_save', JSON.stringify({stars:totalStars, pets:ownedPets, activePet})); }catch(e){} }
+
+// ═══════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════
+let AC = null;
+function ensureAudio(){ if(!AC) AC = new(AudioContext||webkitAudioContext)(); }
+
+function sfx(type){
+  if(!AC) return;
+  const t = AC.currentTime;
+  switch(type){
+    case 'step':{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine';o.frequency.value=180+Math.random()*40;
+      g.gain.setValueAtTime(.03,t);g.gain.exponentialRampToValueAtTime(.001,t+.06);
+      o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.06);break;
+    }
+    case 'interact':{
+      [440,554,659].forEach((f,i)=>{
+        const tt=t+i*.06,o=AC.createOscillator(),g=AC.createGain();
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(.1,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.2);
+        o.connect(g);g.connect(AC.destination);o.start(tt);o.stop(tt+.2);
+      });break;
+    }
+    case 'star':{
+      [523,659,784,1047].forEach((f,i)=>{
+        const tt=t+i*.07,o=AC.createOscillator(),g=AC.createGain();
+        o.type='triangle';o.frequency.value=f;
+        g.gain.setValueAtTime(.12,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.3);
+        o.connect(g);g.connect(AC.destination);o.start(tt);o.stop(tt+.3);
+      });break;
+    }
+    case 'jump':{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='square';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(600,t+.12);
+      g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.15);
+      o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.15);break;
+    }
+    case 'land':{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(60,t+.1);
+      g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);
+      o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.12);break;
+    }
+    case 'click':{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine';o.frequency.value=800;
+      g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);
+      o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.05);break;
+    }
+    case 'tv':{
+      const buf=AC.createBuffer(1,AC.sampleRate*.15,AC.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*.05));
+      const s=AC.createBufferSource(),g=AC.createGain();s.buffer=buf;g.gain.value=.08;
+      s.connect(g);g.connect(AC.destination);s.start(t);break;
+    }
+    case 'complete':{
+      [523,659,784,880,1047].forEach((f,i)=>{
+        const tt=t+i*.1,o=AC.createOscillator(),g=AC.createGain();
+        o.type='triangle';o.frequency.value=f;
+        g.gain.setValueAtTime(.15,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.5);
+        o.connect(g);g.connect(AC.destination);o.start(tt);o.stop(tt+.5);
+      });break;
+    }
+    case 'hurt':{
+      const buf=AC.createBuffer(1,AC.sampleRate*.2,AC.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*.04));
+      const s=AC.createBufferSource(),g=AC.createGain();s.buffer=buf;g.gain.value=.15;
+      s.connect(g);g.connect(AC.destination);s.start(t);
+      const o=AC.createOscillator(),og=AC.createGain();o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(50,t+.15);
+      og.gain.setValueAtTime(.12,t);og.gain.exponentialRampToValueAtTime(.001,t+.18);
+      o.connect(og);og.connect(AC.destination);o.start(t);o.stop(t+.2);break;
+    }
+    case 'door':{
+      [220,330,440,550].forEach((f,i)=>{
+        const tt=t+i*.08,o=AC.createOscillator(),g=AC.createGain();
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(.08,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.25);
+        o.connect(g);g.connect(AC.destination);o.start(tt);o.stop(tt+.25);
+      });break;
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════════
+const particles = [];
+function spawnParticles(x, y, count, color, opts={}){
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2;
+    const spd = (opts.speed||2) + Math.random()*(opts.speedVar||2);
+    particles.push({
+      x, y,
+      vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - (opts.upward||0),
+      life: 1, decay: .01 + Math.random()*.02,
+      size: (opts.size||3) + Math.random()*(opts.sizeVar||2),
+      color: color,
+      grav: opts.grav || 0
+    });
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += p.grav;
+    p.life -= p.decay;
+    if(p.life <= 0) particles.splice(i,1);
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    X.globalAlpha = p.life;
+    X.fillStyle = p.color;
+    X.beginPath();
+    X.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+    X.fill();
+  }
+  X.globalAlpha = 1;
+}
+
+// ═══════════════════════════════════════
+//  STARS BACKGROUND
+// ═══════════════════════════════════════
+const bgStars = [];
+for(let i=0;i<200;i++){
+  bgStars.push({
+    x: Math.random()*2000, y: Math.random()*2000,
+    size: .5 + Math.random()*2,
+    speed: .1 + Math.random()*.4,
+    twinkle: Math.random()*Math.PI*2,
+    twinkleSpd: .02 + Math.random()*.04
+  });
+}
+function drawStarsBg(ox=0,oy=0){
+  for(const s of bgStars){
+    s.twinkle += s.twinkleSpd;
+    const a = .3 + Math.sin(s.twinkle)*.3;
+    X.globalAlpha = a;
+    X.fillStyle = '#fff';
+    const sx = ((s.x - ox*s.speed)%W + W)%W;
+    const sy = ((s.y - oy*s.speed)%H + H)%H;
+    X.beginPath(); X.arc(sx, sy, s.size, 0, Math.PI*2); X.fill();
+  }
+  X.globalAlpha = 1;
+}
+
+// ═══════════════════════════════════════
+//  DRAW POOP CHARACTER
+// ═══════════════════════════════════════
+function drawPoop(x, y, size, facing, walkFrame, opts={}){
+  X.save();
+  X.translate(x, y);
+  if(facing < 0) X.scale(-1,1);
+  
+  const bob = Math.sin(walkFrame*.15)*3;
+  const squish = opts.squish || 0;
+  
+  // Shadow
+  X.globalAlpha = .2;
+  X.fillStyle = '#000';
+  X.beginPath();
+  X.ellipse(0, size*.45, size*.4, size*.1, 0, 0, Math.PI*2);
+  X.fill();
+  X.globalAlpha = 1;
+  
+  // Body
+  X.save();
+  X.translate(0, bob - squish*5);
+  X.scale(1+squish*.15, 1-squish*.1);
+  
+  // Main poop shape
+  const gradient = X.createLinearGradient(-size*.3, -size*.5, size*.3, size*.4);
+  gradient.addColorStop(0, opts.color1 || '#8B6914');
+  gradient.addColorStop(1, opts.color2 || '#5C4A1E');
+  X.fillStyle = gradient;
+  
+  // Bottom mound
+  X.beginPath();
+  X.ellipse(0, size*.2, size*.38, size*.22, 0, 0, Math.PI*2);
+  X.fill();
+  
+  // Middle mound
+  X.beginPath();
+  X.ellipse(0, -size*.02, size*.3, size*.2, 0, 0, Math.PI*2);
+  X.fill();
+  
+  // Top swirl
+  X.beginPath();
+  X.ellipse(size*.05, -size*.22, size*.2, size*.16, .15, 0, Math.PI*2);
+  X.fill();
+  
+  // Tip
+  X.beginPath();
+  X.ellipse(size*.1, -size*.38, size*.1, size*.1, .3, 0, Math.PI*2);
+  X.fill();
+  
+  // Eyes
+  const ey = -size*.05;
+  // White
+  X.fillStyle = '#fff';
+  X.beginPath(); X.ellipse(-size*.12, ey, size*.09, size*.1, 0, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.ellipse(size*.1, ey, size*.09, size*.1, 0, 0, Math.PI*2); X.fill();
+  // Pupils
+  X.fillStyle = '#111';
+  const px = opts.lookX || 0;
+  X.beginPath(); X.arc(-size*.12 + px*2, ey, size*.045, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(size*.1 + px*2, ey, size*.045, 0, Math.PI*2); X.fill();
+  // Eye shine
+  X.fillStyle = '#fff';
+  X.beginPath(); X.arc(-size*.14 + px, ey - size*.03, size*.02, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(size*.08 + px, ey - size*.03, size*.02, 0, Math.PI*2); X.fill();
+  
+  // Blush
+  X.globalAlpha = .25;
+  X.fillStyle = '#ff69b4';
+  X.beginPath(); X.ellipse(-size*.22, ey+size*.08, size*.06, size*.04, 0, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.ellipse(size*.22, ey+size*.08, size*.06, size*.04, 0, 0, Math.PI*2); X.fill();
+  X.globalAlpha = 1;
+  
+  // Smile
+  X.strokeStyle = '#111';
+  X.lineWidth = 2;
+  X.beginPath();
+  X.arc(0, ey + size*.06, size*.1, .15*Math.PI, .85*Math.PI);
+  X.stroke();
+  
+  // Accessory based on skin
+  if(opts.hat === 'helmet'){
+    X.strokeStyle = 'rgba(120,200,255,.5)';
+    X.lineWidth = 2;
+    X.beginPath(); X.arc(0, -size*.15, size*.35, Math.PI*.9, Math.PI*2.1); X.stroke();
+    X.strokeStyle = 'rgba(120,200,255,.2)';
+    X.beginPath(); X.ellipse(0, -size*.15, size*.38, size*.38, 0, 0, Math.PI*2); X.stroke();
+  }
+  if(opts.hat === 'crown'){
+    X.fillStyle = '#fbbf24';
+    X.shadowBlur = 10; X.shadowColor = '#fbbf24';
+    const cy = -size*.45;
+    X.beginPath();
+    X.moveTo(-size*.15, cy);
+    X.lineTo(-size*.18, cy-size*.12);
+    X.lineTo(-size*.08, cy-size*.05);
+    X.lineTo(0, cy-size*.15);
+    X.lineTo(size*.08, cy-size*.05);
+    X.lineTo(size*.18, cy-size*.12);
+    X.lineTo(size*.15, cy);
+    X.closePath();
+    X.fill();
+    X.shadowBlur = 0;
+  }
+  
+  X.restore();
+  X.restore();
+}
+
+// ═══════════════════════════════════════
+//  INTRO SEQUENCE
+// ═══════════════════════════════════════
+let introTimer = 0;
+let introPhase = 0;
+let introStarted = false;
+
+function startIntro(){
+  gameState = 'intro';
+  introTimer = 0;
+  introPhase = 0;
+  document.getElementById('intro').classList.remove('hidden');
+}
+
+function updateIntro(dt){
+  introTimer += dt;
+  
+  if(introPhase === 0 && introTimer > .5){
+    document.getElementById('ih1').classList.add('show');
+    introPhase = 1;
+  }
+  if(introPhase === 1 && introTimer > 1.5){
+    document.getElementById('ih2').classList.add('show');
+    introPhase = 2;
+  }
+  if(introPhase === 2 && introTimer > 2.5){
+    document.getElementById('ih3').classList.add('show');
+    introPhase = 3;
+  }
+  if(introPhase === 3 && introTimer > 3.5){
+    document.getElementById('ih4').classList.add('show');
+    document.getElementById('intro-skip').style.opacity = '1';
+    introPhase = 4;
+  }
+}
+
+document.getElementById('intro-skip').addEventListener('click', () => {
+  ensureAudio();
+  sfx('interact');
+  document.getElementById('intro').classList.add('hidden');
+  enterRoom();
+});
+
+// ═══════════════════════════════════════
+//  ROOM STATE
+// ═══════════════════════════════════════
+const ROOM = {
+  width: 1400,
+  height: 500,
+  floorY: 380,
+  petX: 200, petY: 380,
+  // Player
+  px: 200, py: 0, pvx: 0, pvy: 0,
+  pFacing: 1, pWalk: 0, pOnGround: false,
+  pSquish: 0,
+  // Camera
+  camX: 0,
+  // Room objects
+  objects: [
+    { id:'tv', x:120, y:200, w:120, h:90, label:'📺 Телевизор', hint:'E — включить', active:false },
+    { id:'lamp', x:300, y:170, w:40, h:130, label:'💡 Лампа', hint:'E — переключить', active:true },
+    { id:'poster', x:500, y:160, w:80, h:100, label:'🌌 Постер', hint:'E — посмотреть' },
+    { id:'shelf', x:650, y:200, w:100, h:60, label:'📚 Полка', hint:'E — почитать' },
+    { id:'door', x:800, y:210, w:60, h:170, label:'🚪 Дверь', hint:'E — перейти на уровень', isDoor:true },
+    { id:'bed', x:30, y:280, w:100, h:60, label:'🛏️ Кровать', hint:'E — отдохнуть' },
+    { id:'cat', x:420, y:345, w:40, h:35, label:'🐱 Котик', hint:'E — погладить' },
+    { id:'window', x:180, y:80, w:170, h:120, label:'🪟 Окно', hint:'E — посмотреть в космос' },
+    { id:'arcade', x:920, y:250, w:70, h:130, label:'🕹️ Аркада', hint:'E — 5 мини-игр' },
+    { id:'catch', x:560, y:345, w:45, h:35, label:'🧺 Ловушка звёзд', hint:'E — поймай звёзды' },
+    { id:'abyss', x:1050, y:210, w:60, h:170, label:'🌀 Портал Бездны', hint:'E — Abyss Walker' },
+    { id:'shop', x:1200, y:250, w:80, h:130, label:'🛒 Магазин', hint:'E — питомцы' },
+  ],
+  nearObj: null,
+  stepTimer: 0,
+  // Decorative
+  catPurr: 0,
+  lampGlow: 1,
+  tvStatic: 0,
+  shelfMsg: '',
+  shelfMsgTimer: 0,
+};
+
+const SHELF_QUOTES = [
+  '"Какашки тоже мечтают о звёздах" — Капитан Пупс',
+  '"В космосе никто не услышит твой пук" — Наука',
+  '"Каждый 💩 может стать ⭐" — Мотивация',
+  '"404: Гравитация не найдена" — Баг-репорт',
+  '"Диана, ты лучше всех 💖" — Факт',
+  '"Загляни в окно — там целая вселенная 🌌" — Подсказка',
+];
+
+function enterRoom(){
+  gameState = 'room';
+  ROOM.px = 200;
+  ROOM.py = ROOM.floorY;
+  ROOM.pvy = 0;
+  ROOM.pvx = 0;
+  ROOM.camX = 0;
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hint').style.display = 'block';
+  updateHUD();
+  setTimeout(()=>{ document.getElementById('hud-hint').style.opacity = '.4'; }, 100);
+  setTimeout(()=>{ document.getElementById('hud-hint').style.opacity = '0'; }, 6000);
+  startMusic();
+  if(!window._welcomed){ window._welcomed = true; setTimeout(()=>toast('Привет, Диана! 💜 Тут окно в космос, магазин питомцев и много игр'), 400); }
+}
+
+function updateRoom(dt){
+  const R = ROOM;
+  if(menuOpen) return; // магазин открыт — комната на паузе
+  const spd = 4;
+  const grav = .5;
+  
+  // Movement
+  let mx = 0;
+  if(KEYS['ArrowLeft']||KEYS['KeyA']) mx = -1;
+  if(KEYS['ArrowRight']||KEYS['KeyD']) mx = 1;
+  
+  R.pvx = mx * spd;
+  R.px += R.pvx;
+  R.px = Math.max(20, Math.min(R.width - 20, R.px));
+  
+  if(mx !== 0) R.pFacing = mx;
+  if(mx !== 0) R.pWalk++;
+  else R.pWalk = 0;
+  
+  // Step sound
+  if(mx !== 0 && R.pOnGround){
+    R.stepTimer++;
+    if(R.stepTimer % 15 === 0) sfx('step');
+  }
+  
+  // Jump
+  if((KEYS['ArrowUp']||KEYS['KeyW']||KEYS['Space']) && R.pOnGround){
+    R.pvy = -10;
+    R.pOnGround = false;
+    sfx('jump');
+  }
+  
+  // Gravity
+  R.pvy += grav;
+  R.py += R.pvy;
+  
+  if(R.py >= R.floorY){
+    if(!R.pOnGround && R.pvy > 2){
+      R.pSquish = 1;
+      sfx('land');
+      spawnParticles(R.px - R.camX + (W-R.width)/2, R.floorY + 50, 5, 'rgba(255,255,255,.3)', {speed:1,speedVar:1,size:1,sizeVar:1,grav:.05});
+    }
+    R.py = R.floorY;
+    R.pvy = 0;
+    R.pOnGround = true;
+  }
+  
+  R.pSquish *= .85;
+  
+  // Camera
+  const targetCam = Math.max(0, Math.min(R.width - W, R.px - W/2));
+  R.camX += (targetCam - R.camX) * .08;
+  if(R.width <= W) R.camX = (R.width - W) / 2;
+  
+  // Detect nearest object
+  R.nearObj = null;
+  let minDist = 70;
+  for(const obj of R.objects){
+    const cx = obj.x + obj.w/2;
+    const cy = obj.y + obj.h/2;
+    const d = Math.abs(R.px - cx);
+    if(d < minDist && R.py > obj.y - 60){
+      minDist = d;
+      R.nearObj = obj;
+    }
+  }
+  
+  // Show interaction prompt
+  const prompt = document.getElementById('interaction-prompt');
+  if(R.nearObj){
+    const sx = R.nearObj.x + R.nearObj.w/2 - R.camX + (W > R.width ? (W-R.width)/2 : 0);
+    prompt.style.display = 'block';
+    prompt.style.left = sx + 'px';
+    prompt.style.top = (R.nearObj.y - 30 + (W > R.width ? 50 : 0)) + 'px';
+    prompt.textContent = R.nearObj.hint;
+  } else {
+    prompt.style.display = 'none';
+  }
+  
+  // Animate decoratives
+  R.catPurr += dt;
+  if(R.shelfMsgTimer > 0) R.shelfMsgTimer -= dt;
+  
+  // Питомец идёт за Дианой
+  const petTargetX = R.px - R.pFacing*40;
+  R.petX += (petTargetX - R.petX) * 0.08;
+  R.petY += (R.floorY - R.petY) * 0.1;
+
+  // Lamp glow
+  R.lampGlow = R.objects.find(o=>o.id==='lamp').active ? 1 : .15;
+  
+  // TV static
+  if(R.objects.find(o=>o.id==='tv').active) R.tvStatic += dt;
+}
+
+function drawRoom(){
+  const R = ROOM;
+  const ox = -R.camX + (W > R.width ? (W-R.width)/2 : 0);
+  
+  // Background gradient
+  X.fillStyle = '#0a0020';
+  X.fillRect(0, 0, W, H);
+  
+  drawStarsBg(R.camX, 0);
+  
+  // Room walls
+  X.save();
+  X.translate(ox, 50);
+  
+  // Back wall
+  const wallGrad = X.createLinearGradient(0,0,0,R.floorY);
+  wallGrad.addColorStop(0, '#120830');
+  wallGrad.addColorStop(1, '#1a0a3a');
+  X.fillStyle = wallGrad;
+  X.fillRect(0, 0, R.width, R.floorY);
+  
+  // Wall pattern - subtle grid
+  X.globalAlpha = .04;
+  X.strokeStyle = '#c084fc';
+  for(let i=0;i<R.width;i+=40){
+    X.beginPath();X.moveTo(i,0);X.lineTo(i,R.floorY);X.stroke();
+  }
+  for(let i=0;i<R.floorY;i+=40){
+    X.beginPath();X.moveTo(0,i);X.lineTo(R.width,i);X.stroke();
+  }
+  X.globalAlpha = 1;
+  
+  // Floor
+  const floorGrad = X.createLinearGradient(0,R.floorY,0,R.floorY+120);
+  floorGrad.addColorStop(0, '#2a1050');
+  floorGrad.addColorStop(1, '#150830');
+  X.fillStyle = floorGrad;
+  X.fillRect(0, R.floorY, R.width, 200);
+  
+  // Floor line
+  X.strokeStyle = '#c084fc';
+  X.globalAlpha = .3;
+  X.lineWidth = 2;
+  X.beginPath();X.moveTo(0,R.floorY);X.lineTo(R.width,R.floorY);X.stroke();
+  X.globalAlpha = 1;
+  
+  // Lamp glow on wall
+  if(R.lampGlow > .5){
+    const lg = X.createRadialGradient(320, 170, 0, 320, 170, 250);
+    lg.addColorStop(0, 'rgba(251,191,36,.08)');
+    lg.addColorStop(1, 'rgba(251,191,36,0)');
+    X.fillStyle = lg;
+    X.fillRect(0,0,R.width,R.floorY+50);
+  }
+  
+  // ── OBJECTS ──
+  
+  // Bed
+  X.fillStyle = '#3a1860';
+  X.fillRect(30, 310, 100, 40);
+  X.fillStyle = '#5a2890';
+  X.fillRect(30, 300, 100, 15);
+  // Pillow
+  X.fillStyle = '#c084fc';
+  X.beginPath();
+  X.ellipse(55, 308, 20, 8, 0, 0, Math.PI*2);
+  X.fill();
+  // Blanket
+  X.fillStyle = '#7c3aed';
+  X.fillRect(70, 310, 58, 30);
+  X.fillStyle = '#ff69b4';
+  X.globalAlpha = .3;
+  for(let i=0;i<5;i++){
+    X.beginPath();X.arc(80+i*12, 325, 4, 0, Math.PI*2);X.fill();
+  }
+  X.globalAlpha = 1;
+  
+  // TV
+  const tv = R.objects.find(o=>o.id==='tv');
+  X.fillStyle = '#1a1a2e';
+  X.strokeStyle = '#333';
+  X.lineWidth = 3;
+  X.strokeRect(tv.x, tv.y, tv.w, tv.h);
+  X.fillRect(tv.x, tv.y, tv.w, tv.h);
+  // TV stand
+  X.fillStyle = '#2a2a3e';
+  X.fillRect(tv.x+45, tv.y+tv.h, 30, 60);
+  X.fillRect(tv.x+25, tv.y+tv.h+55, 70, 8);
+  
+  if(tv.active){
+    // Static/glow
+    X.fillStyle = '#1a0a3a';
+    X.fillRect(tv.x+4, tv.y+4, tv.w-8, tv.h-8);
+    // Animated static
+    for(let i=0;i<80;i++){
+      X.fillStyle = `rgba(${100+Math.random()*155},${100+Math.random()*155},${200+Math.random()*55},${.2+Math.random()*.3})`;
+      X.fillRect(
+        tv.x+4+Math.random()*(tv.w-8),
+        tv.y+4+Math.random()*(tv.h-8),
+        2+Math.random()*4, 1+Math.random()*2
+      );
+    }
+    // Glow
+    X.shadowBlur = 30;
+    X.shadowColor = '#7c3aed';
+    X.strokeStyle = 'rgba(124,58,237,.4)';
+    X.lineWidth = 1;
+    X.strokeRect(tv.x+2, tv.y+2, tv.w-4, tv.h-4);
+    X.shadowBlur = 0;
+    // Power indicator
+    X.fillStyle = '#34d399';
+    X.beginPath();X.arc(tv.x+tv.w-10, tv.y+tv.h-8, 3, 0, Math.PI*2);X.fill();
+  } else {
+    // Off screen
+    X.fillStyle = '#0a0a15';
+    X.fillRect(tv.x+4, tv.y+4, tv.w-8, tv.h-8);
+    X.fillStyle = '#ff4060';
+    X.beginPath();X.arc(tv.x+tv.w-10, tv.y+tv.h-8, 3, 0, Math.PI*2);X.fill();
+  }
+  
+  // Lamp
+  const lamp = R.objects.find(o=>o.id==='lamp');
+  // Stand
+  X.fillStyle = '#4a3070';
+  X.fillRect(lamp.x+15, lamp.y+40, 10, 90);
+  X.fillRect(lamp.x+5, lamp.y+125, 30, 5);
+  // Shade
+  if(lamp.active){
+    X.fillStyle = '#fbbf24';
+    X.shadowBlur = 25;
+    X.shadowColor = '#fbbf24';
+  } else {
+    X.fillStyle = '#4a3a30';
+    X.shadowBlur = 0;
+  }
+  X.beginPath();
+  X.moveTo(lamp.x, lamp.y+40);
+  X.lineTo(lamp.x+40, lamp.y+40);
+  X.lineTo(lamp.x+35, lamp.y);
+  X.lineTo(lamp.x+5, lamp.y);
+  X.closePath();
+  X.fill();
+  X.shadowBlur = 0;
+  
+  // Poster
+  const poster = R.objects.find(o=>o.id==='poster');
+  X.fillStyle = '#0f0f2e';
+  X.fillRect(poster.x, poster.y, poster.w, poster.h);
+  X.strokeStyle = '#c084fc';
+  X.lineWidth = 2;
+  X.strokeRect(poster.x, poster.y, poster.w, poster.h);
+  // Draw mini galaxy
+  X.save();
+  X.translate(poster.x+poster.w/2, poster.y+poster.h/2);
+  const pt = performance.now()/3000;
+  for(let i=0;i<30;i++){
+    const a = i*.7 + pt;
+    const r = 5 + i*1.2;
+    X.fillStyle = `hsl(${260+i*3},80%,${50+i}%)`;
+    X.globalAlpha = .6;
+    X.beginPath();X.arc(Math.cos(a)*r, Math.sin(a)*r*.6, 1, 0, Math.PI*2);X.fill();
+  }
+  X.globalAlpha = 1;
+  X.restore();
+  // Label
+  X.fillStyle = '#c084fc';
+  X.font = '9px Fredoka';
+  X.textAlign = 'center';
+  X.fillText('COSMOS', poster.x+poster.w/2, poster.y+poster.h-8);
+  
+  // Shelf
+  const shelf = R.objects.find(o=>o.id==='shelf');
+  X.fillStyle = '#3a2050';
+  X.fillRect(shelf.x, shelf.y, shelf.w, 8);
+  X.fillRect(shelf.x, shelf.y+30, shelf.w, 8);
+  X.fillRect(shelf.x, shelf.y+shelf.h, shelf.w, 8);
+  // Books
+  const bookColors = ['#ff69b4','#7c3aed','#38bdf8','#fbbf24','#34d399','#ff4060'];
+  for(let i=0;i<6;i++){
+    X.fillStyle = bookColors[i];
+    X.fillRect(shelf.x+5+i*15, shelf.y+8, 12, 22);
+  }
+  for(let i=0;i<5;i++){
+    X.fillStyle = bookColors[5-i];
+    X.fillRect(shelf.x+8+i*18, shelf.y+38, 14, 20);
+  }
+  
+  // Shelf message
+  if(R.shelfMsgTimer > 0){
+    X.globalAlpha = Math.min(1, R.shelfMsgTimer);
+    X.fillStyle = 'rgba(0,0,0,.7)';
+    const tw = X.measureText(R.shelfMsg).width + 30;
+    X.fillRect(shelf.x + shelf.w/2 - tw/2, shelf.y - 40, tw, 28);
+    X.fillStyle = '#fbbf24';
+    X.font = '12px Fredoka';
+    X.textAlign = 'center';
+    X.fillText(R.shelfMsg, shelf.x + shelf.w/2, shelf.y - 22);
+    X.globalAlpha = 1;
+  }
+  
+  // Ловушка звёзд (корзинка)
+  const catchObj = R.objects.find(o=>o.id==='catch');
+  X.font = '30px serif'; X.textAlign='center';
+  X.fillText('🧺', catchObj.x+catchObj.w/2, catchObj.y+catchObj.h);
+  X.font='9px serif';
+  X.fillStyle='#fbbf24';
+  X.fillText('⭐', catchObj.x+catchObj.w/2, catchObj.y-2);
+
+  // Cat
+  const cat = R.objects.find(o=>o.id==='cat');
+  const catBob = Math.sin(R.catPurr*2)*.5;
+  X.font = '28px serif';
+  X.textAlign = 'center';
+  X.fillText('🐱', cat.x+cat.w/2, cat.y+cat.h + catBob);
+  // Purr particles
+  if(R.catPurr > 0 && Math.random() < .03){
+    spawnParticles(cat.x+cat.w/2+ox, cat.y+20+50, 1, '#ff69b4', {speed:.5,speedVar:.5,size:2,sizeVar:1,upward:1});
+  }
+  
+  // Door
+  const door = R.objects.find(o=>o.id==='door');
+  // Frame
+  X.fillStyle = '#2a1050';
+  X.fillRect(door.x-5, door.y-5, door.w+10, door.h+5);
+  // Door
+  const doorGrad = X.createLinearGradient(door.x, door.y, door.x+door.w, door.y);
+  doorGrad.addColorStop(0, '#4a2080');
+  doorGrad.addColorStop(1, '#3a1860');
+  X.fillStyle = doorGrad;
+  X.fillRect(door.x, door.y, door.w, door.h);
+  // Door glow
+  X.shadowBlur = 20;
+  X.shadowColor = '#c084fc';
+  X.strokeStyle = '#c084fc';
+  X.lineWidth = 1;
+  X.strokeRect(door.x, door.y, door.w, door.h);
+  X.shadowBlur = 0;
+  // Handle
+  X.fillStyle = '#fbbf24';
+  X.beginPath();X.arc(door.x+door.w-12, door.y+door.h/2, 4, 0, Math.PI*2);X.fill();
+  // Sign
+  X.fillStyle = '#c084fc';
+  X.font = '11px Fredoka';
+  X.textAlign = 'center';
+  X.fillText('🚀 УРОВЕНЬ 1', door.x+door.w/2, door.y+30);
+  // Stars around door
+  const dt2 = performance.now()/1000;
+  for(let i=0;i<5;i++){
+    const sa = dt2 + i*1.3;
+    const sr = 45 + Math.sin(sa*2)*5;
+    X.fillStyle = '#fbbf24';
+    X.globalAlpha = .4 + Math.sin(sa*3)*.3;
+    X.font = '10px serif';
+    X.fillText('✨', door.x+door.w/2 + Math.cos(sa)*sr, door.y+door.h/2 + Math.sin(sa)*sr*.7);
+  }
+  X.globalAlpha = 1;
+  
+  // Window — a portal to space
+  const win = R.objects.find(o=>o.id==='window');
+  X.save();
+  // frame
+  X.fillStyle = '#3a2060';
+  X.fillRect(win.x-8, win.y-8, win.w+16, win.h+16);
+  // sky inside
+  const wsky = X.createLinearGradient(win.x, win.y, win.x, win.y+win.h);
+  wsky.addColorStop(0, '#0a0030');
+  wsky.addColorStop(1, '#1a0550');
+  X.fillStyle = wsky;
+  X.fillRect(win.x, win.y, win.w, win.h);
+  // clip stars into window
+  X.save();
+  X.beginPath(); X.rect(win.x, win.y, win.w, win.h); X.clip();
+  const wt = performance.now()/1000;
+  for(let i=0;i<40;i++){
+    const sx = win.x + ((i*37)%win.w);
+    const sy = win.y + ((i*53)%win.h);
+    X.globalAlpha = .4 + Math.sin(wt*2+i)*.4;
+    X.fillStyle = '#fff';
+    X.beginPath(); X.arc(sx, sy, 1.2, 0, Math.PI*2); X.fill();
+  }
+  X.globalAlpha = 1;
+  // little planet + moon in window
+  X.fillStyle = '#38bdf8';
+  X.beginPath(); X.arc(win.x+win.w*.7, win.y+win.h*.35, 16, 0, Math.PI*2); X.fill();
+  X.fillStyle = '#7cc';
+  X.beginPath(); X.arc(win.x+win.w*.74, win.y+win.h*.32, 5, 0, Math.PI*2); X.fill();
+  X.fillStyle = '#ddd';
+  X.beginPath(); X.arc(win.x+win.w*.3, win.y+win.h*.6, 7, 0, Math.PI*2); X.fill();
+  X.restore();
+  // cross bars
+  X.strokeStyle = '#3a2060'; X.lineWidth = 6;
+  X.beginPath(); X.moveTo(win.x+win.w/2, win.y); X.lineTo(win.x+win.w/2, win.y+win.h); X.stroke();
+  X.beginPath(); X.moveTo(win.x, win.y+win.h/2); X.lineTo(win.x+win.w, win.y+win.h/2); X.stroke();
+  X.restore();
+
+  // Arcade cabinet
+  const arc = R.objects.find(o=>o.id==='arcade');
+  X.fillStyle = '#2a1a4a';
+  X.fillRect(arc.x, arc.y, arc.w, arc.h);
+  X.fillStyle = '#12081f';
+  X.fillRect(arc.x+8, arc.y+12, arc.w-16, 40); // screen
+  // animated screen
+  X.fillStyle = `hsl(${(performance.now()/20)%360},80%,60%)`;
+  X.font = '20px serif'; X.textAlign='center';
+  X.fillText('🎮', arc.x+arc.w/2, arc.y+40);
+  X.fillStyle = '#ff69b4'; X.fillRect(arc.x+15, arc.y+62, 12, 12);
+  X.fillStyle = '#34d399'; X.fillRect(arc.x+arc.w-27, arc.y+62, 12, 12);
+  X.fillStyle = '#c084fc'; X.font='9px Fredoka';
+  X.fillText('ARCADE', arc.x+arc.w/2, arc.y+arc.h-10);
+
+  // Abyss portal
+  const ab = R.objects.find(o=>o.id==='abyss');
+  X.save();
+  X.translate(ab.x+ab.w/2, ab.y+ab.h/2);
+  for(let i=0;i<6;i++){
+    const rr = 12 + i*8;
+    X.strokeStyle = `hsla(${260+i*10},70%,50%,${.6-i*.08})`;
+    X.lineWidth = 3;
+    X.beginPath();
+    X.ellipse(0,0, rr, rr*1.4, performance.now()/1000 + i, 0, Math.PI*2);
+    X.stroke();
+  }
+  X.fillStyle = '#000'; X.beginPath(); X.arc(0,0,10,0,Math.PI*2); X.fill();
+  X.restore();
+  X.fillStyle = '#c084fc'; X.font='9px Fredoka'; X.textAlign='center';
+  X.fillText('🌀 БЕЗДНА', ab.x+ab.w/2, ab.y-8);
+
+  // Магазин
+  const shop = R.objects.find(o=>o.id==='shop');
+  X.fillStyle = '#2a1a4a'; X.fillRect(shop.x, shop.y+20, shop.w, shop.h-20);
+  // навес
+  for(let i=0;i<5;i++){ X.fillStyle = i%2?'#ff69b4':'#fff'; X.fillRect(shop.x+i*(shop.w/5), shop.y, shop.w/5, 22); }
+  X.font='34px serif'; X.textAlign='center';
+  X.fillText('🛒', shop.x+shop.w/2, shop.y+70);
+  X.fillStyle='#fbbf24'; X.font='11px Fredoka';
+  X.fillText('МАГАЗИН', shop.x+shop.w/2, shop.y+shop.h-8);
+  // питомцы-витрина
+  X.font='16px serif';
+  X.fillText('🐶🐱🐉', shop.x+shop.w/2, shop.y+95);
+
+  // Питомец Дианы
+  if(activePet && activePet !== 'none'){
+    const pet = PETS.find(p=>p.id===activePet);
+    if(pet){
+      const pbob = Math.sin(performance.now()/300)*3;
+      X.font='26px serif'; X.textAlign='center';
+      X.fillText(pet.emoji, R.petX, R.petY+20 + pbob);
+    }
+  }
+
+  // ── PLAYER ──
+  drawPoop(R.px, R.py+20, 28, R.pFacing, R.pWalk, {
+    squish: R.pSquish,
+    hat: 'crown'
+  });
+  
+  // Name above player
+  X.fillStyle = '#ff69b4';
+  X.font = '12px Fredoka';
+  X.textAlign = 'center';
+  X.fillText('Диана', R.px, R.py - 25);
+  
+  X.restore();
+}
+
+// ═══════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════
+function tryInteract(){
+  if(gameState === 'room' && ROOM.nearObj){
+    const obj = ROOM.nearObj;
+    ensureAudio();
+    
+    switch(obj.id){
+      case 'tv':
+        if(!obj.active){
+          obj.active = true;
+          obj.hint = 'E — выключить / видео';
+          sfx('tv');
+        } else {
+          // Show video overlay
+          document.getElementById('video-frame').src = 'https://www.youtube-nocookie.com/embed/CKLpJpVqpJo?rel=0&autoplay=1';
+          document.getElementById('video-overlay').style.display = 'flex';
+          sfx('click');
+        }
+        break;
+      case 'lamp':
+        obj.active = !obj.active;
+        sfx('click');
+        spawnParticles(
+          ROOM.objects.find(o=>o.id==='lamp').x + 20 - ROOM.camX + (W > ROOM.width ? (W-ROOM.width)/2 : 0),
+          ROOM.objects.find(o=>o.id==='lamp').y + 50,
+          8, '#fbbf24', {speed:2,speedVar:1,size:2,sizeVar:2}
+        );
+        break;
+      case 'poster':
+        sfx('interact');
+        // Zoom effect
+        spawnParticles(
+          obj.x + obj.w/2 - ROOM.camX + (W > ROOM.width ? (W-ROOM.width)/2 : 0),
+          obj.y + obj.h/2 + 50,
+          15, '#c084fc', {speed:3,speedVar:2,size:2,sizeVar:2}
+        );
+        break;
+      case 'shelf':
+        sfx('interact');
+        ROOM.shelfMsg = SHELF_QUOTES[Math.floor(Math.random()*SHELF_QUOTES.length)];
+        ROOM.shelfMsgTimer = 4;
+        break;
+      case 'door':
+        sfx('door');
+        startLevel(1);
+        break;
+      case 'bed':
+        sfx('interact');
+        spawnParticles(
+          obj.x + obj.w/2 - ROOM.camX + (W > ROOM.width ? (W-ROOM.width)/2 : 0),
+          obj.y + 50, 10, '#c084fc', {speed:1,speedVar:2,size:3,sizeVar:2,upward:2}
+        );
+        // Heal/rest effect — just sparkles + message
+        ROOM.shelfMsg = '💤 Zzz... Какашка отдыхает...';
+        ROOM.shelfMsgTimer = 3;
+        break;
+      case 'cat':
+        sfx('star');
+        // Heart particles
+        spawnParticles(
+          obj.x + obj.w/2 - ROOM.camX + (W > ROOM.width ? (W-ROOM.width)/2 : 0),
+          obj.y + 50, 12, '#ff69b4', {speed:2,speedVar:2,size:3,sizeVar:2,upward:2}
+        );
+        ROOM.shelfMsg = '🐱 Мррр... Котик доволен!';
+        ROOM.shelfMsgTimer = 2.5;
+        break;
+      case 'window':
+        sfx('interact');
+        enterGalaxy();
+        break;
+      case 'catch':
+        sfx('star');
+        startCatch();
+        break;
+      case 'shop':
+        sfx('interact');
+        openShop();
+        break;
+      case 'arcade':
+        sfx('door');
+        location.href = 'poop-odyssey.html';
+        break;
+      case 'abyss':
+        sfx('door');
+        location.href = 'abyss-walker.html';
+        break;
+    }
+  }
+  
+  if(gameState === 'level'){
+    // No special interaction in level
+  }
+}
+
+// Video overlay close
+document.getElementById('video-close').addEventListener('click', () => {
+  document.getElementById('video-overlay').style.display = 'none';
+  document.getElementById('video-frame').src = '';
+  sfx('click');
+});
+
+// ═══════════════════════════════════════
+//  LEVEL 1 — SPACE PLATFORMER
+// ═══════════════════════════════════════
+const LVL = {
+  px:60, py:0, pvx:0, pvy:0,
+  pFacing:1, pWalk:0, pOnGround:false, pSquish:0,
+  camX:0,
+  hp:3, maxHp:3, invTimer:0,
+  stars:[], starsCollected:0,
+  platforms:[],
+  enemies:[],
+  goal:null,
+  width:2400,
+  floorY:450,
+  complete:false,
+  shakeTimer:0,
+};
+
+function buildLevel1(){
+  LVL.px = 60; LVL.py = 0; LVL.pvx = 0; LVL.pvy = 0;
+  LVL.pFacing = 1; LVL.pWalk = 0; LVL.pOnGround = false;
+  LVL.hp = 3; LVL.maxHp = 3; LVL.invTimer = 0;
+  LVL.starsCollected = 0; LVL.complete = false;
+  LVL.camX = 0; LVL.shakeTimer = 0;
+  
+  LVL.platforms = [
+    {x:0,   y:LVL.floorY, w:300, h:30},
+    {x:350, y:LVL.floorY-40, w:120, h:30},
+    {x:520, y:LVL.floorY-90, w:100, h:30},
+    {x:670, y:LVL.floorY-50, w:150, h:30},
+    {x:870, y:LVL.floorY, w:200, h:30},
+    {x:1100,y:LVL.floorY-70, w:120, h:30},
+    {x:1270,y:LVL.floorY-130,w:100, h:30},
+    {x:1420,y:LVL.floorY-80, w:140, h:30},
+    {x:1600,y:LVL.floorY, w:200, h:30},
+    {x:1850,y:LVL.floorY-60, w:120, h:30},
+    {x:2020,y:LVL.floorY-120,w:100, h:30},
+    {x:2170,y:LVL.floorY-40, w:200, h:30},
+  ];
+  
+  LVL.stars = [];
+  // Place stars above platforms
+  for(const p of LVL.platforms){
+    const count = Math.floor(p.w / 50);
+    for(let i=0;i<count;i++){
+      LVL.stars.push({
+        x: p.x + 25 + i*50,
+        y: p.y - 40 - Math.random()*30,
+        collected: false,
+        bob: Math.random()*Math.PI*2
+      });
+    }
+  }
+  
+  // Enemies — simple patrollers
+  LVL.enemies = [
+    {x:400, y:LVL.floorY-40-25, w:30, h:25, left:350, right:470, spd:1, dir:1, emoji:'👾'},
+    {x:900, y:LVL.floorY-25, w:30, h:25, left:870, right:1070, spd:1.2, dir:1, emoji:'👽'},
+    {x:1450,y:LVL.floorY-80-25, w:30, h:25, left:1420, right:1560, spd:.8, dir:1, emoji:'🛸'},
+    {x:1650,y:LVL.floorY-25, w:30, h:25, left:1600, right:1800, spd:1.5, dir:1, emoji:'👾'},
+    {x:2200,y:LVL.floorY-40-25, w:30, h:25, left:2170, right:2370, spd:1, dir:1, emoji:'👽'},
+  ];
+  
+  // Goal — flag at end
+  LVL.goal = {x:2320, y:LVL.floorY-40-50, w:40, h:50};
+}
+
+function startLevel(n){
+  gameState = 'level';
+  document.getElementById('hud-hint').style.display = 'none';
+  document.getElementById('interaction-prompt').style.display = 'none';
+  
+  // Transition screen
+  const lt = document.getElementById('level-transition');
+  lt.style.display = 'flex';
+  lt.style.opacity = '1';
+  document.getElementById('lt-text').textContent = `🚀 Уровень ${n}`;
+  document.getElementById('lt-sub').textContent = 'Космическое путешествие Дианы';
+  
+  buildLevel1();
+  
+  setTimeout(()=>{
+    lt.style.transition = 'opacity .8s';
+    lt.style.opacity = '0';
+    setTimeout(()=>{ lt.style.display = 'none'; lt.style.transition = ''; }, 800);
+  }, 1500);
+}
+
+function updateLevel(dt){
+  const L = LVL;
+  if(L.complete) return;
+  
+  const spd = 4.5;
+  const grav = .55;
+  const jumpPow = -11;
+  
+  // Movement
+  let mx = 0;
+  if(KEYS['ArrowLeft']||KEYS['KeyA']) mx = -1;
+  if(KEYS['ArrowRight']||KEYS['KeyD']) mx = 1;
+  
+  L.pvx = mx * spd;
+  L.px += L.pvx;
+  L.px = Math.max(15, Math.min(L.width - 15, L.px));
+  
+  if(mx !== 0) L.pFacing = mx;
+  if(mx !== 0) L.pWalk++;
+  else L.pWalk = 0;
+  
+  // Jump
+  if((KEYS['ArrowUp']||KEYS['KeyW']||KEYS['Space']) && L.pOnGround){
+    L.pvy = jumpPow;
+    L.pOnGround = false;
+    sfx('jump');
+  }
+  
+  // Gravity
+  L.pvy += grav;
+  L.py += L.pvy;
+  
+  // Platform collision
+  L.pOnGround = false;
+  for(const p of L.platforms){
+    if(L.px > p.x-10 && L.px < p.x+p.w+10 &&
+       L.py+25 >= p.y && L.py+25 <= p.y+15 && L.pvy >= 0){
+      L.py = p.y - 25;
+      L.pvy = 0;
+      L.pOnGround = true;
+      if(L.pSquish === 0 && Math.abs(L.pvx) > 0){} // walking
+    }
+  }
+  
+  // Fall death
+  if(L.py > H + 100){
+    L.hp = 0;
+    levelDeath();
+    return;
+  }
+  
+  // Squish
+  L.pSquish *= .85;
+  
+  // Camera
+  const targetCam = L.px - W/2;
+  L.camX += (targetCam - L.camX) * .1;
+  L.camX = Math.max(0, Math.min(L.width - W, L.camX));
+  
+  // Shake
+  if(L.shakeTimer > 0) L.shakeTimer -= dt;
+  
+  // Invincibility
+  if(L.invTimer > 0) L.invTimer -= dt;
+  
+  // Stars collection
+  for(const s of L.stars){
+    if(!s.collected){
+      s.bob += .05;
+      const dx = L.px - s.x;
+      const dy = L.py - s.y;
+      if(Math.sqrt(dx*dx+dy*dy) < 30){
+        s.collected = true;
+        L.starsCollected++;
+        sfx('star');
+        spawnParticles(s.x - L.camX, s.y, 10, '#fbbf24', {speed:3,speedVar:2,size:2,sizeVar:2});
+      }
+    }
+  }
+  
+  // Enemies
+  for(const e of L.enemies){
+    e.x += e.spd * e.dir;
+    if(e.x <= e.left || e.x >= e.right) e.dir *= -1;
+    
+    // Player collision
+    if(L.invTimer <= 0){
+      const dx = L.px - e.x;
+      const dy = L.py - (e.y + e.h/2);
+      if(Math.abs(dx) < 25 && Math.abs(dy) < 25){
+        // Stomp from above?
+        if(L.pvy > 0 && L.py < e.y){
+          // Kill enemy
+          e.x = -1000; e.y = -1000;
+          L.pvy = -8;
+          sfx('interact');
+          spawnParticles(e.x + L.camX, e.y, 12, '#ff69b4', {speed:3,speedVar:2,size:3,sizeVar:2});
+        } else {
+          // Damage player
+          L.hp--;
+          L.invTimer = 1.5;
+          L.shakeTimer = .3;
+          sfx('hurt');
+          spawnParticles(L.px - L.camX, L.py, 8, '#ff4060', {speed:2,speedVar:2,size:2,sizeVar:2});
+          // Knockback
+          L.pvx = (L.px > e.x ? 5 : -5);
+          L.pvy = -5;
+          if(L.hp <= 0) levelDeath();
+        }
+      }
+    }
+  }
+  
+  // Goal
+  if(L.goal){
+    const dx = L.px - (L.goal.x + L.goal.w/2);
+    const dy = L.py - (L.goal.y + L.goal.h/2);
+    if(Math.abs(dx) < 35 && Math.abs(dy) < 40){
+      L.complete = true;
+      levelComplete();
+    }
+  }
+  
+  updateHUD();
+}
+
+function drawLevel(){
+  const L = LVL;
+  const ox = -L.camX;
+  const shake = L.shakeTimer > 0 ? (Math.random()-.5)*8 : 0;
+  
+  X.save();
+  X.translate(shake, shake);
+  
+  // Background
+  X.fillStyle = '#08001a';
+  X.fillRect(0,0,W,H);
+  drawStarsBg(L.camX, 0);
+  
+  // Background planets
+  const t = performance.now()/5000;
+  // Big purple planet
+  X.save();
+  const pp = X.createRadialGradient(W*.8 - L.camX*.05, H*.2, 0, W*.8 - L.camX*.05, H*.2, 80);
+  pp.addColorStop(0, '#5a2d82');
+  pp.addColorStop(1, '#2d1050');
+  X.fillStyle = pp;
+  X.beginPath();X.arc(W*.8 - L.camX*.05, H*.2, 80, 0, Math.PI*2);X.fill();
+  // Ring
+  X.strokeStyle = 'rgba(192,132,252,.2)';
+  X.lineWidth = 3;
+  X.beginPath();X.ellipse(W*.8 - L.camX*.05, H*.2, 120, 20, .3, 0, Math.PI*2);X.stroke();
+  X.restore();
+  
+  // Small pink planet
+  X.save();
+  const pp2 = X.createRadialGradient(W*.2 - L.camX*.03, H*.35, 0, W*.2 - L.camX*.03, H*.35, 30);
+  pp2.addColorStop(0, '#ff69b4');
+  pp2.addColorStop(1, '#8b2252');
+  X.fillStyle = pp2;
+  X.beginPath();X.arc(W*.2 - L.camX*.03, H*.35, 30, 0, Math.PI*2);X.fill();
+  X.restore();
+  
+  X.save();
+  X.translate(ox, 0);
+  
+  // Platforms
+  for(const p of L.platforms){
+    // Platform glow
+    X.shadowBlur = 12;
+    X.shadowColor = '#7c3aed';
+    
+    const pg = X.createLinearGradient(p.x, p.y, p.x, p.y+p.h);
+    pg.addColorStop(0, '#3a1a6a');
+    pg.addColorStop(1, '#2a1050');
+    X.fillStyle = pg;
+    
+    // Rounded platform
+    const r = 6;
+    X.beginPath();
+    X.moveTo(p.x+r, p.y);
+    X.lineTo(p.x+p.w-r, p.y);
+    X.quadraticCurveTo(p.x+p.w, p.y, p.x+p.w, p.y+r);
+    X.lineTo(p.x+p.w, p.y+p.h);
+    X.lineTo(p.x, p.y+p.h);
+    X.lineTo(p.x, p.y+r);
+    X.quadraticCurveTo(p.x, p.y, p.x+r, p.y);
+    X.fill();
+    X.shadowBlur = 0;
+    
+    // Top highlight
+    X.strokeStyle = '#c084fc';
+    X.lineWidth = 2;
+    X.globalAlpha = .4;
+    X.beginPath();
+    X.moveTo(p.x+r, p.y);
+    X.lineTo(p.x+p.w-r, p.y);
+    X.stroke();
+    X.globalAlpha = 1;
+    
+    // Surface dots
+    X.fillStyle = 'rgba(192,132,252,.15)';
+    for(let i=0;i<p.w/20;i++){
+      X.beginPath();
+      X.arc(p.x+10+i*20, p.y+8, 2, 0, Math.PI*2);
+      X.fill();
+    }
+  }
+  
+  // Stars
+  for(const s of L.stars){
+    if(!s.collected){
+      const by = Math.sin(s.bob)*5;
+      X.font = '22px serif';
+      X.textAlign = 'center';
+      X.fillText('⭐', s.x, s.y + by);
+      // Glow
+      X.shadowBlur = 15;
+      X.shadowColor = '#fbbf24';
+      X.fillText('⭐', s.x, s.y + by);
+      X.shadowBlur = 0;
+    }
+  }
+  
+  // Enemies
+  for(const e of L.enemies){
+    if(e.x < -100) continue;
+    X.font = '26px serif';
+    X.textAlign = 'center';
+    X.save();
+    X.translate(e.x, e.y + e.h);
+    if(e.dir < 0) X.scale(-1,1);
+    X.fillText(e.emoji, 0, 0);
+    X.restore();
+  }
+  
+  // Goal flag
+  if(L.goal){
+    const gx = L.goal.x, gy = L.goal.y;
+    // Pole
+    X.strokeStyle = '#c084fc';
+    X.lineWidth = 3;
+    X.beginPath();X.moveTo(gx+5, gy+L.goal.h);X.lineTo(gx+5, gy-10);X.stroke();
+    // Flag
+    X.fillStyle = '#ff69b4';
+    X.beginPath();
+    X.moveTo(gx+5, gy-10);
+    X.lineTo(gx+40, gy);
+    X.lineTo(gx+5, gy+10);
+    X.closePath();
+    X.fill();
+    // Star on flag
+    X.font = '14px serif';
+    X.fillText('⭐', gx+20, gy+5);
+    // Glow
+    X.shadowBlur = 20;
+    X.shadowColor = '#ff69b4';
+    X.strokeStyle = 'rgba(255,105,180,.3)';
+    X.lineWidth = 1;
+    X.strokeRect(gx-5, gy-15, L.goal.w+10, L.goal.h+20);
+    X.shadowBlur = 0;
+  }
+  
+  // Player
+  if(L.invTimer > 0 && Math.floor(L.invTimer*10)%2 === 0){
+    // Blink during invincibility
+  } else {
+    drawPoop(L.px, L.py, 24, L.pFacing, L.pWalk, {squish:L.pSquish, hat:'helmet'});
+  }
+  
+  X.restore();
+  
+  // HUD — HP hearts
+  X.save();
+  X.font = '24px serif';
+  X.textAlign = 'left';
+  for(let i=0;i<L.maxHp;i++){
+    X.globalAlpha = i < L.hp ? 1 : .2;
+    X.fillText('💖', 16 + i*32, 40);
+  }
+  X.globalAlpha = 1;
+  // Stars collected
+  X.font = '18px Fredoka';
+  X.fillStyle = '#fbbf24';
+  X.textAlign = 'right';
+  X.fillText(`⭐ ${L.starsCollected}`, W-20, 35);
+  X.restore();
+  
+  X.restore(); // shake
+}
+
+function levelDeath(){
+  // Respawn
+  LVL.px = 60; LVL.py = 0; LVL.pvy = 0;
+  LVL.hp = LVL.maxHp;
+  LVL.invTimer = 2;
+  LVL.camX = 0;
+  sfx('hurt');
+}
+
+function levelComplete(){
+  sfx('complete');
+  
+  // Award stars
+  const earned = LVL.starsCollected;
+  totalStars += earned;
+  save();
+  
+  // Show confetti
+  for(let i=0;i<60;i++){
+    const colors = ['#ff69b4','#fbbf24','#c084fc','#38bdf8','#34d399','#ff4060'];
+    spawnParticles(W/2 + (Math.random()-.5)*W*.6, H*.3, 1,
+      colors[Math.floor(Math.random()*colors.length)],
+      {speed:4,speedVar:3,size:3,sizeVar:3,grav:.08,upward:3});
+  }
+  
+  setTimeout(()=>{
+    const lc = document.getElementById('level-complete');
+    lc.style.display = 'flex';
+    document.getElementById('lc-title').textContent = `🎉 Уровень 1 пройден!`;
+    let starStr = '';
+    for(let i=0;i<3;i++) starStr += i < Math.min(3, Math.ceil(earned/5)) ? '⭐' : '☆';
+    document.getElementById('lc-stars').textContent = starStr;
+    document.getElementById('lc-stars').insertAdjacentHTML('afterend',
+      `<div style="font-size:16px;color:rgba(255,255,255,.5);margin-top:-8px">+${earned} ⭐ собрано</div>`);
+    gameState = 'levelComplete';
+  }, 1000);
+}
+
+// Level complete buttons
+document.getElementById('lc-next').addEventListener('click', () => {
+  document.getElementById('level-complete').style.display = 'none';
+  // Remove extra text
+  const extra = document.querySelector('#level-complete div:not(.lc-title):not(.lc-stars):not(.lc-btn):not([id])');
+  if(extra) extra.remove();
+  sfx('click');
+  // For now, go back to room (only 1 level)
+  ROOM.shelfMsg = '🎉 Ты прошла уровень 1! Скоро будет уровень 2...';
+  ROOM.shelfMsgTimer = 5;
+  enterRoom();
+});
+document.getElementById('lc-room').addEventListener('click', () => {
+  document.getElementById('level-complete').style.display = 'none';
+  const extra = document.querySelector('#level-complete div:not(.lc-title):not(.lc-stars):not(.lc-btn):not([id])');
+  if(extra) extra.remove();
+  sfx('click');
+  enterRoom();
+});
+
+// ═══════════════════════════════════════
+//  PAUSE
+// ═══════════════════════════════════════
+function togglePause(){
+  if(menuOpen){ closeShop(); return; }
+  if(gameState === 'earth' || gameState === 'planet'){ hidePlanetPanel(); enterGalaxy(); return; }
+  if(gameState === 'galaxy'){ exitSpace(); return; }
+  if(gameState === 'intro' || gameState === 'levelComplete') return;
+  paused = !paused;
+  document.getElementById('pause-menu').style.display = paused ? 'flex' : 'none';
+}
+
+document.getElementById('pm-resume').addEventListener('click', () => {
+  paused = false;
+  document.getElementById('pause-menu').style.display = 'none';
+  sfx('click');
+});
+document.getElementById('pm-room').addEventListener('click', () => {
+  paused = false;
+  document.getElementById('pause-menu').style.display = 'none';
+  sfx('click');
+  enterRoom();
+});
+
+// ═══════════════════════════════════════
+//  HUD UPDATE
+// ═══════════════════════════════════════
+function updateHUD(){
+  document.getElementById('hud-stars').textContent = `⭐ ${totalStars}`;
+}
+
+// ═══════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════
+function loop(ts){
+  if(!lastTime) lastTime = ts;
+  const dt = Math.min((ts - lastTime)/1000, .05);
+  lastTime = ts;
+  
+  if(!paused){
+    switch(gameState){
+      case 'intro':
+        X.fillStyle = '#08001a';
+        X.fillRect(0,0,W,H);
+        drawStarsBg(0,ts/50);
+        updateIntro(dt);
+        break;
+      case 'room':
+        updateRoom(dt);
+        drawRoom();
+        break;
+      case 'level':
+        updateLevel(dt);
+        drawLevel();
+        break;
+      case 'levelComplete':
+        drawLevel();
+        break;
+      case 'galaxy':
+        updateGalaxy(dt);
+        drawGalaxy();
+        break;
+      case 'earth':
+        drawEarth();
+        break;
+      case 'planet':
+        drawPlanetView();
+        break;
+      case 'catch':
+        updateCatch(dt);
+        drawCatch();
+        break;
+    }
+
+    updateParticles(dt);
+    drawParticles();
+  }
+  
+  updateGlobalUI();
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════
+//  SPACE VIEW (window → galaxy → earth)
+// ═══════════════════════════════════════
+const SYSTEMS = [
+  {key:'sun', emoji:'☀️', name:'Солнце', fx:.5, fy:.5, r:34, color:'#fbbf24', special:'planet',
+    fact:'Наша звезда! Внутри так горячо, что там сгорел бы миллион пицц за секунду 🍕 Она даёт свет и тепло всей Солнечной системе.',
+    stats:[['Тип','Жёлтый карлик (G2V)'],['Диаметр','1 392 700 км'],['Температура','5 500 °C снаружи'],['Возраст','4,6 млрд лет'],['Масса','333 000 Земель']]},
+  {key:'earth', emoji:'🌍', name:'Земля', fx:.72, fy:.4, r:22, color:'#38bdf8', special:'earth',
+    fact:'Твой дом 💙 Единственная известная планета с жизнью, океанами и котиками. Покрути её и найди свой город!',
+    stats:[['Диаметр','12 742 км'],['От Солнца','149,6 млн км'],['Сутки','24 часа'],['Температура','+15 °C'],['Спутник','Луна 🌙']]},
+  {key:'mars', emoji:'🔴', name:'Марс', fx:.85, fy:.62, r:16, color:'#ff6b4a', special:'planet',
+    fact:'Красная планета. Тут гора Олимп — в 3 раза выше Эвереста 🏔️ Люди мечтают когда-нибудь здесь жить.',
+    stats:[['Диаметр','6 779 км'],['От Солнца','227,9 млн км'],['Сутки','24,6 часа'],['Температура','−63 °C'],['Спутники','Фобос и Деймос']]},
+  {key:'jupiter', emoji:'🪐', name:'Юпитер', fx:.26, fy:.62, r:30, color:'#e0a060', special:'planet',
+    fact:'Самая большая планета! В него влезло бы 1300 таких как Земля. Красное пятно — это шторм, который бушует 350 лет 🌀',
+    stats:[['Диаметр','139 820 км'],['От Солнца','778 млн км'],['Сутки','9,9 часа'],['Температура','−145 °C'],['Спутники','95 лун']]},
+  {key:'saturn', emoji:'💍', name:'Сатурн', fx:.18, fy:.34, r:24, color:'#e8d090', special:'planet',
+    fact:'Планета с кольцами из льда и камней. Он такой лёгкий, что плавал бы в ванне 🛁 (если бы нашлась ванна побольше).',
+    stats:[['Диаметр','116 460 км'],['От Солнца','1,4 млрд км'],['Сутки','10,7 часа'],['Температура','−178 °C'],['Спутники','146 лун']]},
+  {key:'sirius', emoji:'✨', name:'Сириус', fx:.62, fy:.18, r:14, color:'#cfe8ff', special:'planet',
+    fact:'Самая яркая звезда ночного неба ✨ На самом деле это две звезды, которые кружатся вместе, как в танце.',
+    stats:[['Тип','Двойная звезда'],['Расстояние','8,6 световых лет'],['Ярче Солнца','в 25 раз'],['Масса','2 Солнца']]},
+  {key:'nebula', emoji:'🌫️', name:'Туманность Ориона', fx:.4, fy:.24, r:22, color:'#c084fc', special:'planet',
+    fact:'Огромное облако газа и пыли, где прямо сейчас рождаются новые звёзды ⭐ Космический детский садик!',
+    stats:[['Расстояние','1 344 световых года'],['Ширина','24 световых года'],['Видна','невооружённым глазом']]},
+  {key:'blackhole', emoji:'⚫', name:'Чёрная дыра', fx:.9, fy:.24, r:16, color:'#111', special:'planet',
+    fact:'Засасывает всё, даже свет! 🕳️ В центре нашей галактики есть огромная — Стрелец A*. Но она очень-очень далеко, не бойся.',
+    stats:[['Название','Стрелец A*'],['Расстояние','26 000 световых лет'],['Масса','4 млн Солнц']]},
+];
+let galaxyHits = [];
+let selectedSys = null;
+
+// ── КРАСИВАЯ ОТРИСОВКА ПЛАНЕТ ──
+function sphere(cx,cy,r,c1,c2,c3){
+  const g = X.createRadialGradient(cx-r*.38, cy-r*.38, r*.08, cx, cy, r);
+  g.addColorStop(0,c1); g.addColorStop(.55,c2); g.addColorStop(1,c3);
+  X.fillStyle=g; X.beginPath(); X.arc(cx,cy,r,0,Math.PI*2); X.fill();
+}
+function rimGlow(cx,cy,r,color,strength=.55){
+  const g = X.createRadialGradient(cx,cy,r*.82,cx,cy,r*1.35);
+  g.addColorStop(0,'transparent'); g.addColorStop(.55,color); g.addColorStop(1,'transparent');
+  X.save(); X.globalAlpha=strength; X.fillStyle=g;
+  X.beginPath(); X.arc(cx,cy,r*1.35,0,Math.PI*2); X.fill(); X.restore();
+}
+function specular(cx,cy,r){
+  X.save(); X.globalAlpha=.5; X.fillStyle='#fff';
+  X.beginPath(); X.ellipse(cx-r*.34, cy-r*.34, r*.16, r*.1, -0.6, 0, Math.PI*2); X.fill();
+  X.restore();
+}
+function clipCircle(cx,cy,r){ X.beginPath(); X.arc(cx,cy,r,0,Math.PI*2); X.clip(); }
+function terminator(cx,cy,r){
+  // тёмная сторона планеты (день/ночь), свет из верхнего-левого угла
+  const g = X.createRadialGradient(cx-r*.45, cy-r*.45, r*.15, cx, cy, r*1.05);
+  g.addColorStop(0,'rgba(0,0,15,0)');
+  g.addColorStop(.5,'rgba(0,0,15,0)');
+  g.addColorStop(1,'rgba(0,0,22,.72)');
+  X.save(); X.beginPath(); X.arc(cx,cy,r,0,Math.PI*2); X.clip();
+  X.fillStyle=g; X.fillRect(cx-r,cy-r,2*r,2*r); X.restore();
+}
+
+function drawPlanet(cx,cy,r,type,t){
+  X.save();
+  switch(type){
+    case 'sun': {
+      // пульсирующая корона
+      const pulse = 1 + Math.sin(t*2)*.06;
+      const cor = X.createRadialGradient(cx,cy,r*.6,cx,cy,r*2.4*pulse);
+      cor.addColorStop(0,'rgba(255,200,60,.7)'); cor.addColorStop(.4,'rgba(255,120,20,.35)'); cor.addColorStop(1,'transparent');
+      X.fillStyle=cor; X.beginPath(); X.arc(cx,cy,r*2.4*pulse,0,Math.PI*2); X.fill();
+      // протуберанцы
+      for(let i=0;i<10;i++){ const a=i*.63+t; const rr=r*(1.05+Math.abs(Math.sin(a*3+t))*.25);
+        X.strokeStyle='rgba(255,160,40,.5)'; X.lineWidth=r*.06;
+        X.beginPath(); X.moveTo(cx+Math.cos(a)*r*.95, cy+Math.sin(a)*r*.95); X.lineTo(cx+Math.cos(a)*rr, cy+Math.sin(a)*rr); X.stroke(); }
+      sphere(cx,cy,r,'#fff6c0','#ffb020','#ff6a00');
+      // пятна
+      X.save(); clipCircle(cx,cy,r); X.globalAlpha=.25; X.fillStyle='#c04000';
+      for(let i=0;i<5;i++){ const a=i*1.7+t*.3; X.beginPath(); X.arc(cx+Math.cos(a)*r*.4, cy+Math.sin(a)*r*.4, r*.12,0,Math.PI*2); X.fill(); }
+      X.restore();
+      break;
+    }
+    case 'earth': {
+      rimGlow(cx,cy,r,'rgba(90,170,255,.8)');
+      sphere(cx,cy,r,'#7ec8ff','#1f7fd0','#0a3a70');
+      X.save(); clipCircle(cx,cy,r);
+      // материки
+      X.fillStyle='#3a9d4a';
+      const off=t*.2;
+      const blobs=[[-.3,-.2,.35],[.1,.15,.3],[.4,-.3,.22],[-.1,.4,.25],[.35,.35,.2]];
+      for(const [bx,by,bs] of blobs){ const ang=bx*3+off; const px2=cx+Math.cos(ang)*r*.5*(Math.cos(off)*.3+1)*0+ bx*r*1.3;
+        X.beginPath(); X.ellipse(cx+bx*r, cy+by*r, r*bs, r*bs*.7, bx, 0, Math.PI*2); X.fill(); }
+      // облака
+      X.globalAlpha=.35; X.fillStyle='#fff';
+      for(let i=0;i<6;i++){ const a=i*1.1+off; X.beginPath(); X.ellipse(cx+Math.cos(a)*r*.6, cy+Math.sin(a*1.3)*r*.5, r*.22, r*.1, a, 0, Math.PI*2); X.fill(); }
+      X.restore();
+      specular(cx,cy,r);
+      break;
+    }
+    case 'mars': {
+      rimGlow(cx,cy,r,'rgba(255,110,70,.5)');
+      sphere(cx,cy,r,'#ff9a6a','#c14a28','#6e2412');
+      X.save(); clipCircle(cx,cy,r); X.globalAlpha=.3; X.fillStyle='#5a1e0e';
+      for(let i=0;i<7;i++){ const a=i*1.3+t*.1; X.beginPath(); X.arc(cx+Math.cos(a)*r*.5, cy+Math.sin(a)*r*.5, r*.1,0,Math.PI*2); X.fill(); }
+      // полярная шапка
+      X.globalAlpha=.8; X.fillStyle='#ffe';
+      X.beginPath(); X.ellipse(cx, cy-r*.8, r*.35, r*.16, 0, 0, Math.PI*2); X.fill();
+      X.restore();
+      specular(cx,cy,r);
+      break;
+    }
+    case 'jupiter': {
+      rimGlow(cx,cy,r,'rgba(230,180,120,.5)');
+      sphere(cx,cy,r,'#f5deb0','#c99a5a','#7a5230');
+      X.save(); clipCircle(cx,cy,r);
+      const bands=['#e8c893','#c99a5a','#e0b884','#a9713f','#d8a86e','#b58048'];
+      for(let i=0;i<bands.length;i++){ X.globalAlpha=.55; X.fillStyle=bands[i];
+        const yy=cy-r+ (i+ .5)*(2*r/bands.length) + Math.sin(t+i)*2;
+        X.beginPath(); X.ellipse(cx, yy, r, r/bands.length*.7, 0, 0, Math.PI*2); X.fill(); }
+      // большое красное пятно
+      X.globalAlpha=.85; X.fillStyle='#c0392b';
+      X.beginPath(); X.ellipse(cx+r*.3, cy+r*.25, r*.22, r*.14, .2, 0, Math.PI*2); X.fill();
+      X.restore();
+      specular(cx,cy,r);
+      break;
+    }
+    case 'saturn': {
+      rimGlow(cx,cy,r,'rgba(230,210,150,.4)');
+      // кольца сзади
+      X.save(); X.translate(cx,cy); X.rotate(-.35);
+      for(let k=0;k<3;k++){ X.strokeStyle=['rgba(230,210,150,.5)','rgba(200,180,130,.35)','rgba(255,240,200,.3)'][k];
+        X.lineWidth=r*.12; X.beginPath(); X.ellipse(0,0,r*(1.5+k*.18), r*(.4+k*.05), 0, Math.PI, Math.PI*2); X.stroke(); }
+      X.restore();
+      sphere(cx,cy,r,'#fff0c8','#e0c078','#9a7838');
+      X.save(); clipCircle(cx,cy,r); X.globalAlpha=.4;
+      for(let i=0;i<4;i++){ X.fillStyle=i%2?'#d0a860':'#efd89a'; X.beginPath(); X.ellipse(cx,cy-r+ (i+.5)*(r/2), r, r*.16,0,0,Math.PI*2); X.fill(); }
+      X.restore();
+      // кольца спереди
+      X.save(); X.translate(cx,cy); X.rotate(-.35);
+      for(let k=0;k<3;k++){ X.strokeStyle=['rgba(230,210,150,.7)','rgba(200,180,130,.5)','rgba(255,240,200,.4)'][k];
+        X.lineWidth=r*.12; X.beginPath(); X.ellipse(0,0,r*(1.5+k*.18), r*(.4+k*.05), 0, 0, Math.PI); X.stroke(); }
+      X.restore();
+      specular(cx,cy,r);
+      break;
+    }
+    case 'sirius': {
+      // яркая звезда с лучами
+      const fl = 1+Math.sin(t*4)*.15;
+      const g=X.createRadialGradient(cx,cy,0,cx,cy,r*2.2*fl);
+      g.addColorStop(0,'#fff'); g.addColorStop(.3,'#cfe8ff'); g.addColorStop(1,'transparent');
+      X.fillStyle=g; X.beginPath(); X.arc(cx,cy,r*2.2*fl,0,Math.PI*2); X.fill();
+      X.strokeStyle='rgba(255,255,255,.9)'; X.lineWidth=2;
+      for(let i=0;i<4;i++){ const a=i*Math.PI/4+t*.2; X.beginPath(); X.moveTo(cx-Math.cos(a)*r*2*fl, cy-Math.sin(a)*r*2*fl); X.lineTo(cx+Math.cos(a)*r*2*fl, cy+Math.sin(a)*r*2*fl); X.stroke(); }
+      X.fillStyle='#fff'; X.beginPath(); X.arc(cx,cy,r*.7,0,Math.PI*2); X.fill();
+      break;
+    }
+    case 'nebula': {
+      X.save();
+      for(let i=0;i<20;i++){ const a=i*.9+t*.1; const rr=r*(.4+ (i%5)*.25);
+        const col=['rgba(192,132,252,.18)','rgba(255,105,180,.15)','rgba(56,189,248,.15)'][i%3];
+        X.fillStyle=col; X.beginPath(); X.arc(cx+Math.cos(a)*rr, cy+Math.sin(a)*rr*.7, r*.5,0,Math.PI*2); X.fill(); }
+      // звёздочки внутри
+      X.fillStyle='#fff';
+      for(let i=0;i<8;i++){ const a=i*2.1+t; X.globalAlpha=.5+Math.sin(t*3+i)*.5; X.beginPath(); X.arc(cx+Math.cos(a)*r*.6, cy+Math.sin(a)*r*.5, 1.5,0,Math.PI*2); X.fill(); }
+      X.restore();
+      break;
+    }
+    case 'blackhole': {
+      // ── РЕАЛИСТИЧНАЯ ЧЁРНАЯ ДЫРА (стиль «Интерстеллар») ──
+      X.save(); X.translate(cx,cy);
+      const tilt = 0.32;                 // наклон диска (сплющивание по вертикали)
+      const inner = r*1.14, outer = r*3.0;
+      // внешнее свечение
+      const bg = X.createRadialGradient(0,0,r*0.7,0,0,outer*1.05);
+      bg.addColorStop(0,'rgba(255,150,60,0)');
+      bg.addColorStop(.45,'rgba(255,120,40,.12)');
+      bg.addColorStop(.8,'rgba(150,50,200,.10)');
+      bg.addColorStop(1,'rgba(0,0,0,0)');
+      X.fillStyle=bg; X.beginPath(); X.arc(0,0,outer*1.05,0,Math.PI*2); X.fill();
+      // Доплер: левый край диска ярче (движется к нам), правый темнее
+      const dop = X.createLinearGradient(-outer,0,outer,0);
+      dop.addColorStop(0,'#ffffff');
+      dop.addColorStop(.35,'#ffe6b0');
+      dop.addColorStop(.6,'#ff9030');
+      dop.addColorStop(1,'#7a1e12');
+      // функция отрисовки половины диска (кольца)
+      function diskHalf(top){
+        X.save(); X.scale(1, tilt);
+        const a0 = top ? Math.PI : 0, a1 = top ? Math.PI*2 : Math.PI;
+        for(let rr=inner; rr<outer; rr+=1.4){
+          const f=(rr-inner)/(outer-inner);
+          X.globalAlpha = (0.9*(1-f)*(1-f)) + 0.05;
+          X.strokeStyle = dop;
+          X.lineWidth = 2.0;
+          X.beginPath(); X.arc(0,0,rr,a0,a1); X.stroke();
+        }
+        X.restore(); X.globalAlpha=1;
+      }
+      // 1) дальняя (верхняя) половина диска — за дырой
+      diskHalf(true);
+      // 2) горизонт событий (абсолютно чёрный)
+      X.fillStyle='#000'; X.beginPath(); X.arc(0,0,r,0,Math.PI*2); X.fill();
+      // 3) фотонное кольцо (кольцо Эйнштейна) — тонкое яркое свечение вокруг
+      X.save();
+      X.shadowBlur = r*0.6; X.shadowColor = 'rgba(255,220,170,.9)';
+      X.strokeStyle = 'rgba(255,245,220,.95)'; X.lineWidth = r*0.05;
+      X.beginPath(); X.arc(0,0,r*1.045,0,Math.PI*2); X.stroke();
+      X.strokeStyle = 'rgba(255,180,90,.6)'; X.lineWidth = r*0.12;
+      X.beginPath(); X.arc(0,0,r*1.09,0,Math.PI*2); X.stroke();
+      X.restore();
+      // 4) ближняя (нижняя) половина диска — перед дырой
+      diskHalf(false);
+      // 5) искажение света у самого горизонта
+      const warp = X.createRadialGradient(0,0,r*0.9,0,0,r*1.5);
+      warp.addColorStop(0,'rgba(255,200,120,.35)');
+      warp.addColorStop(1,'rgba(255,200,120,0)');
+      X.fillStyle=warp; X.beginPath(); X.arc(0,0,r*1.5,0,Math.PI*2); X.fill();
+      X.restore();
+      break;
+    }
+    default:
+      sphere(cx,cy,r,'#ccc','#888','#444');
+  }
+  if(['earth','mars','jupiter','saturn'].includes(type)) terminator(cx,cy,r);
+  X.restore();
+}
+
+function enterGalaxy(){
+  gameState = 'galaxy';
+  selectedSys = null;
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('hud-hint').style.display = 'none';
+  document.getElementById('interaction-prompt').style.display = 'none';
+  document.getElementById('space-ui').style.display = 'block';
+  document.getElementById('space-card').style.display = 'none';
+  document.getElementById('earth-controls').style.display = 'none';
+  document.getElementById('planet-panel').style.display = 'none';
+  document.getElementById('space-title').textContent = '🌌 Вид из окна — тыкай на звёзды и планеты!';
+}
+function exitSpace(){
+  gameState = 'room';
+  document.getElementById('space-ui').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+}
+document.getElementById('space-back').addEventListener('click', ()=>{
+  sfx('click');
+  if(gameState === 'earth' || gameState === 'planet'){ hidePlanetPanel(); enterGalaxy(); }
+  else exitSpace();
+});
+
+function updateGalaxy(dt){ /* purely visual, animated in draw */ }
+function drawGalaxy(){
+  X.fillStyle = '#04010f'; X.fillRect(0,0,W,H);
+  drawStarsBg(performance.now()/40, 0);
+  // spiral dust
+  X.save();
+  X.translate(W*.5, H*.5);
+  const gt = performance.now()/8000;
+  for(let arm=0; arm<3; arm++){
+    for(let i=0;i<90;i++){
+      const a = arm*2.09 + i*.12 + gt;
+      const r = i*3.2;
+      X.globalAlpha = .12;
+      X.fillStyle = `hsl(${260+i},80%,${40+i*.4}%)`;
+      X.beginPath(); X.arc(Math.cos(a)*r, Math.sin(a)*r*.7, 2, 0, Math.PI*2); X.fill();
+    }
+  }
+  X.globalAlpha = 1;
+  X.restore();
+  // systems
+  galaxyHits = [];
+  const bob = performance.now()/1000;
+  for(const s of SYSTEMS){
+    const px = s.fx*W, py = s.fy*H + Math.sin(bob + s.fx*6)*6;
+    galaxyHits.push({s, px, py, r:s.r});
+    // красивая планета
+    drawPlanet(px, py, s.r, s.key, performance.now()/1000 + s.fx*4);
+    // ring highlight if selected
+    if(selectedSys === s){
+      X.strokeStyle = '#fff'; X.lineWidth = 2;
+      X.beginPath(); X.arc(px,py,s.r*1.6,0,Math.PI*2); X.stroke();
+    }
+    // name
+    X.font = '12px Fredoka'; X.fillStyle = 'rgba(255,255,255,.7)'; X.textBaseline='top';
+    X.fillText(s.name, px, py + s.r*1.4);
+  }
+  X.textBaseline = 'alphabetic';
+}
+
+// ── ЭКРАН ПЛАНЕТЫ (вращение + инфо) ──
+let currentPlanet = null, planetRot = 0, planetTilt = 0.2, planetZoom = 1;
+function enterPlanet(s){
+  if(s.key === 'earth'){ enterEarth(); showPlanetPanel(s); return; }
+  currentPlanet = s;
+  gameState = 'planet';
+  planetRot = 0; planetTilt = 0.2; planetZoom = 1;
+  document.getElementById('space-card').style.display = 'none';
+  document.getElementById('earth-controls').style.display = 'none';
+  document.getElementById('space-title').textContent = '';
+  showPlanetPanel(s);
+  toast('✨ ' + s.name);
+}
+function showPlanetPanel(s){
+  document.getElementById('planet-panel').style.display = 'block';
+  document.getElementById('pp-name').textContent = s.emoji + ' ' + s.name;
+  document.getElementById('pp-fact').textContent = s.fact;
+  const rows = (s.stats||[]).map(([k,v]) =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)">
+       <span style="color:rgba(255,255,255,.55)">${k}</span><span style="font-weight:600">${v}</span></div>`).join('');
+  document.getElementById('pp-stats').innerHTML = rows;
+}
+function hidePlanetPanel(){ document.getElementById('planet-panel').style.display = 'none'; }
+function drawPlanetView(){
+  X.fillStyle = '#020109'; X.fillRect(0,0,W,H);
+  drawStarsBg(performance.now()/40, 0);
+  const cx = W*0.4, cy = H/2, R = Math.min(W,H)*0.32*planetZoom;
+  // фоновое свечение под планету (в цвет планеты)
+  const glow = X.createRadialGradient(cx,cy,0,cx,cy,R*2.6);
+  glow.addColorStop(0, currentPlanet.key==='blackhole' ? 'rgba(255,140,40,.22)' : currentPlanet.color + '55');
+  glow.addColorStop(.4, 'rgba(60,20,90,.18)');
+  glow.addColorStop(1, 'transparent');
+  X.fillStyle = glow; X.beginPath(); X.arc(cx,cy,R*2.6,0,Math.PI*2); X.fill();
+  // планета (вращение через planetRot)
+  drawPlanet(cx, cy, R, currentPlanet.key, planetRot);
+  if(!dragging) planetRot += 0.004;
+  // виньетка по краям экрана
+  const vig = X.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);
+  vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,8,.7)');
+  X.fillStyle = vig; X.fillRect(0,0,W,H);
+}
+
+function showCard(s){
+  selectedSys = s;
+  const card = document.getElementById('space-card');
+  document.getElementById('card-name').textContent = s.name;
+  document.getElementById('card-fact').textContent = s.fact;
+  const act = document.getElementById('card-action');
+  if(s.special === 'earth'){
+    act.innerHTML = '<div id="open-earth" style="cursor:pointer;display:inline-block;font-size:14px;padding:10px 22px;border-radius:14px;background:rgba(56,189,248,.25);border:1px solid rgba(56,189,248,.6)">🔭 Рассмотреть Землю</div>';
+    document.getElementById('open-earth').onclick = ()=>{ sfx('star'); enterEarth(); };
+  } else {
+    act.innerHTML = '';
+  }
+  card.style.display = 'block';
+}
+
+// ── EARTH GLOBE ──
+let earthRotY = 0, earthRotX = 0.3, earthZoom = 1, earthBuilt = false;
+let landPoints = [];
+function buildEarth(){
+  landPoints = [];
+  // rough continent clusters [lat, lon, spread, density]
+  const clusters = [
+    [0.9,-1.7,0.6,70],[0.2,-1.2,0.7,90],   // N + S America
+    [0.9,0.3,0.4,50],[-0.4,0.4,0.55,80],   // Europe + Africa
+    [0.5,1.2,0.6,90],[0.9,1.6,0.4,40],     // Asia
+    [-0.5,2.4,0.4,50],                     // Australia
+    [-1.3,0,0.5,40],                       // Antarctica-ish
+  ];
+  for(const [lat,lon,spread,n] of clusters){
+    for(let i=0;i<n;i++){
+      const la = lat + (Math.random()-.5)*spread*2*(Math.random());
+      const lo = lon + (Math.random()-.5)*spread*2*(Math.random());
+      if(la>1.5||la<-1.5) continue;
+      landPoints.push([la, lo, Math.random()<0.5]); // 3-й флаг = «город» (огонёк ночью)
+    }
+  }
+  cloudPoints = [];
+  for(let i=0;i<120;i++) cloudPoints.push([(Math.random()-.5)*3, Math.random()*Math.PI*2]);
+  earthBuilt = true;
+}
+let cloudPoints = [];
+const CITIES = [
+  ['Москва',55.75,37.62],['Лондон',51.5,-0.12],['Париж',48.85,2.35],
+  ['Нью-Йорк',40.71,-74.0],['Токио',35.68,139.7],['Пекин',39.9,116.4],
+  ['Дубай',25.2,55.27],['Каир',30.04,31.24],['Рио',-22.9,-43.2],
+  ['Сидней',-33.87,151.2],['Лос-Анджелес',34.05,-118.24],['Дели',28.6,77.2]
+];
+function enterEarth(){
+  if(!earthBuilt) buildEarth();
+  gameState = 'earth';
+  earthRotY = 0; earthRotX = 0.3; earthZoom = 1;
+  document.getElementById('space-card').style.display = 'none';
+  document.getElementById('earth-controls').style.display = 'flex';
+  document.getElementById('space-title').textContent = '🌍 Земля — твой дом 💙';
+}
+function drawEarth(){
+  X.fillStyle = '#02010a'; X.fillRect(0,0,W,H);
+  drawStarsBg(0,0);
+  const cx = W/2, cy = H/2, R = Math.min(W,H)*0.33*earthZoom;
+  // atmosphere glow
+  const atm = X.createRadialGradient(cx,cy,R*.85,cx,cy,R*1.25);
+  atm.addColorStop(0,'rgba(80,160,255,.35)'); atm.addColorStop(1,'transparent');
+  X.fillStyle = atm; X.beginPath(); X.arc(cx,cy,R*1.25,0,Math.PI*2); X.fill();
+  // ocean sphere
+  const oc = X.createRadialGradient(cx-R*.35, cy-R*.35, R*.1, cx, cy, R);
+  oc.addColorStop(0,'#3aa0e0'); oc.addColorStop(.7,'#1560a8'); oc.addColorStop(1,'#0a2a55');
+  X.fillStyle = oc; X.beginPath(); X.arc(cx,cy,R,0,Math.PI*2); X.fill();
+  // land points
+  const cosX = Math.cos(earthRotX), sinX = Math.sin(earthRotX);
+  const lightDir = [-0.5,-0.4,0.75];
+  X.save(); clipCircle(cx,cy,R);
+  for(const [la,lo,city] of landPoints){
+    const lo2 = lo + earthRotY;
+    let x3 = Math.cos(la)*Math.sin(lo2);
+    let y3 = Math.sin(la);
+    let z3 = Math.cos(la)*Math.cos(lo2);
+    const y2 = y3*cosX - z3*sinX;
+    const z2 = y3*sinX + z3*cosX;
+    if(z2 <= 0) continue; // back side
+    const sx = cx + x3*R, sy = cy + y2*R;
+    const lit = Math.max(0, x3*lightDir[0] + y2*lightDir[1] + z2*lightDir[2]);
+    const shade = 0.4 + lit*0.6;
+    const g = Math.floor(150*shade), rr = Math.floor(70*shade), b = Math.floor(60*shade);
+    X.fillStyle = `rgb(${rr},${g},${b})`;
+    const dotR = R*0.028*(0.6+z2*0.6);
+    X.beginPath(); X.arc(sx, sy, dotR, 0, Math.PI*2); X.fill();
+    // огни городов на ночной стороне
+    if(city && lit < 0.22){
+      X.save(); X.globalAlpha = .8; X.fillStyle = '#ffe08a';
+      X.beginPath(); X.arc(sx, sy, dotR*0.5, 0, Math.PI*2); X.fill(); X.restore();
+    }
+  }
+  // облачный слой (вращается чуть быстрее)
+  X.globalAlpha = .28; X.fillStyle = '#fff';
+  for(const [la, base] of cloudPoints){
+    const lo2 = base + earthRotY*1.3;
+    const x3 = Math.cos(la)*Math.sin(lo2), y3 = Math.sin(la), z3 = Math.cos(la)*Math.cos(lo2);
+    const y2 = y3*cosX - z3*sinX, z2 = y3*sinX + z3*cosX;
+    if(z2 <= 0) continue;
+    const lit = Math.max(0, x3*lightDir[0] + y2*lightDir[1] + z2*lightDir[2]);
+    X.globalAlpha = .1 + lit*0.35;
+    X.beginPath(); X.ellipse(cx + x3*R, cy + y2*R, R*0.06, R*0.035, 0, 0, Math.PI*2); X.fill();
+  }
+  X.globalAlpha = 1;
+  X.restore();
+  // day/night terminator shading (dark side overlay)
+  const nightGrad = X.createRadialGradient(cx+R*.5, cy+R*.4, R*.2, cx, cy, R);
+  nightGrad.addColorStop(0,'rgba(0,0,20,0)'); nightGrad.addColorStop(1,'rgba(0,0,20,.55)');
+  X.save(); X.beginPath(); X.arc(cx,cy,R,0,Math.PI*2); X.clip();
+  X.fillStyle = nightGrad; X.fillRect(cx-R,cy-R,R*2,R*2); X.restore();
+  // реальные города
+  for(const [name, latD, lonD] of CITIES){
+    const la = latD*Math.PI/180, lo = lonD*Math.PI/180 + earthRotY;
+    const x3 = Math.cos(la)*Math.sin(lo), y3 = Math.sin(la), z3 = Math.cos(la)*Math.cos(lo);
+    const y2 = y3*cosX - z3*sinX, z2 = y3*sinX + z3*cosX;
+    if(z2 <= 0.28) continue; // только на видимой передней части
+    const sx = cx + x3*R, sy = cy + y2*R;
+    // пульсирующая точка
+    const pulse = 3 + Math.sin(performance.now()/300 + latD)*1.5;
+    X.fillStyle = '#ff5a7a';
+    X.beginPath(); X.arc(sx, sy, pulse, 0, Math.PI*2); X.fill();
+    X.strokeStyle = 'rgba(255,255,255,.8)'; X.lineWidth = 1; X.stroke();
+    // подпись
+    X.globalAlpha = Math.min(1, (z2-0.28)*3);
+    X.fillStyle = '#fff'; X.font = '12px Fredoka'; X.textAlign = 'left';
+    X.fillText(name, sx + 8, sy + 4);
+    X.globalAlpha = 1;
+  }
+  // auto slow spin when not dragging
+  if(!dragging) earthRotY += 0.0025;
+}
+
+// ── SPACE INPUT ──
+let dragging = false, lastMX = 0, lastMY = 0, downX = 0, downY = 0;
+function canvasXY(e){ return { x: e.clientX, y: e.clientY }; }
+C.addEventListener('pointerdown', e=>{
+  ensureAudio();
+  if(gameState === 'galaxy'){
+    const {x,y} = canvasXY(e);
+    let hit = null;
+    for(const h of galaxyHits){ if(Math.hypot(x-h.px, y-h.py) < h.r*1.5){ hit = h.s; break; } }
+    if(hit){
+      sfx('star');
+      enterPlanet(hit);
+    } else {
+      document.getElementById('space-card').style.display = 'none';
+      selectedSys = null;
+    }
+  } else if(gameState === 'earth' || gameState === 'planet'){
+    dragging = true; lastMX = e.clientX; lastMY = e.clientY;
+  }
+});
+addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const dx = e.clientX - lastMX, dy = e.clientY - lastMY;
+  if(gameState === 'earth'){
+    earthRotY += dx*0.006;
+    earthRotX = Math.max(-1.3, Math.min(1.3, earthRotX + dy*0.006));
+  } else if(gameState === 'planet'){
+    planetRot += dx*0.01;
+  }
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+addEventListener('pointerup', ()=> dragging = false);
+C.addEventListener('wheel', e=>{
+  if(gameState === 'earth'){ e.preventDefault(); earthZoom = Math.max(0.6, Math.min(3, earthZoom - e.deltaY*0.001)); }
+  else if(gameState === 'planet'){ e.preventDefault(); planetZoom = Math.max(0.6, Math.min(2.4, planetZoom - e.deltaY*0.001)); }
+}, {passive:false});
+document.getElementById('ez-in').addEventListener('click', ()=>{ earthZoom = Math.min(3, earthZoom+0.3); sfx('click'); });
+document.getElementById('ez-out').addEventListener('click', ()=>{ earthZoom = Math.max(0.6, earthZoom-0.3); sfx('click'); });
+
+// ═══════════════════════════════════════
+//  ТОСТЫ (эмоции)
+// ═══════════════════════════════════════
+let toastTimer = null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(-20px)';
+  }, 2200);
+}
+
+// ═══════════════════════════════════════
+//  МАГАЗИН + ПИТОМЦЫ
+// ═══════════════════════════════════════
+const PETS = [
+  {id:'none',    emoji:'🚫', name:'Без питомца', cost:0},
+  {id:'cat',     emoji:'🐱', name:'Котик',       cost:0,   free:true},
+  {id:'dog',     emoji:'🐶', name:'Пёсик',       cost:30},
+  {id:'bunny',   emoji:'🐰', name:'Зайка',       cost:50},
+  {id:'penguin', emoji:'🐧', name:'Пингвин',     cost:80},
+  {id:'alien',   emoji:'👽', name:'Пришелец',    cost:120},
+  {id:'fox',     emoji:'🦊', name:'Лисёнок',     cost:150},
+  {id:'robot',   emoji:'🤖', name:'Робот',       cost:200},
+  {id:'dragon',  emoji:'🐉', name:'Дракоша',     cost:350},
+  {id:'unicorn', emoji:'🦄', name:'Единорог',    cost:500},
+];
+let menuOpen = false;
+function openShop(){
+  menuOpen = true;
+  document.getElementById('shop-overlay').style.display = 'flex';
+  renderShop();
+}
+function closeShop(){
+  menuOpen = false;
+  document.getElementById('shop-overlay').style.display = 'none';
+}
+function renderShop(){
+  document.getElementById('shop-stars').textContent = totalStars;
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+  for(const p of PETS){
+    const owned = ownedPets.includes(p.id) || p.free || p.cost === 0;
+    const active = activePet === p.id;
+    const card = document.createElement('div');
+    card.style.cssText = `text-align:center;padding:14px 10px;border-radius:16px;border:2px solid ${active?'#fbbf24':'rgba(192,132,252,.3)'};background:${active?'rgba(251,191,36,.12)':'rgba(255,255,255,.03)'};cursor:pointer;transition:transform .15s`;
+    card.onmouseenter = ()=> card.style.transform='scale(1.05)';
+    card.onmouseleave = ()=> card.style.transform='scale(1)';
+    const btn = owned
+      ? (active ? '<div style="font-size:12px;color:#fbbf24;font-weight:700;margin-top:6px">✓ Выбран</div>'
+                : '<div style="font-size:12px;color:#34d399;font-weight:700;margin-top:6px">Выбрать</div>')
+      : `<div style="font-size:13px;color:#fbbf24;font-weight:700;margin-top:6px">⭐ ${p.cost}</div>`;
+    card.innerHTML = `<div style="font-size:44px">${p.emoji}</div><div style="font-size:14px;font-weight:600;margin-top:4px">${p.name}</div>${btn}`;
+    card.onclick = ()=> buyOrSelectPet(p, owned);
+    grid.appendChild(card);
+  }
+}
+function buyOrSelectPet(p, owned){
+  ensureAudio();
+  if(owned){
+    activePet = p.id; save(); sfx('star');
+    ROOM.petX = ROOM.px; ROOM.petY = ROOM.floorY;
+    toast(p.id==='none' ? 'Питомец убран' : p.emoji + ' ' + p.name + ' теперь с тобой!');
+    renderShop();
+  } else {
+    if(totalStars >= p.cost){
+      totalStars -= p.cost;
+      ownedPets.push(p.id);
+      activePet = p.id;
+      save(); updateHUD(); sfx('complete');
+      toast('🎉 Ты завела ' + p.emoji + ' ' + p.name + '!');
+      // конфетти
+      for(let i=0;i<30;i++) spawnParticles(W/2+(Math.random()-.5)*300, H*.4, 1, ['#fbbf24','#ff69b4','#c084fc'][i%3], {speed:4,speedVar:3,size:3,sizeVar:2,grav:.05,upward:3});
+      renderShop();
+    } else {
+      sfx('hurt');
+      toast('😅 Не хватает звёзд! Играй в игры, чтобы заработать ⭐');
+    }
+  }
+}
+document.getElementById('shop-close').addEventListener('click', ()=>{ sfx('click'); closeShop(); });
+document.getElementById('shop-overlay').addEventListener('click', e=>{ if(e.target.id==='shop-overlay') closeShop(); });
+
+// ═══════════════════════════════════════
+//  ИГРА: ПОЙМАЙ ЗВЁЗДЫ
+// ═══════════════════════════════════════
+const CATCH = { bx:0, items:[], score:0, lives:3, time:30, spawnT:0, over:false };
+function startCatch(){
+  gameState = 'catch';
+  CATCH.bx = W/2; CATCH.items = []; CATCH.score = 0; CATCH.lives = 3; CATCH.time = 30; CATCH.spawnT = 0; CATCH.over = false;
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('interaction-prompt').style.display = 'none';
+}
+function updateCatch(dt){
+  const G = CATCH;
+  if(G.over) return;
+  // управление
+  if(KEYS['ArrowLeft']||KEYS['KeyA']) G.bx -= 8;
+  if(KEYS['ArrowRight']||KEYS['KeyD']) G.bx += 8;
+  G.bx = Math.max(40, Math.min(W-40, G.bx));
+  // таймер
+  G.time -= dt;
+  if(G.time <= 0){ G.time = 0; catchEnd(); return; }
+  // спавн
+  G.spawnT -= dt;
+  if(G.spawnT <= 0){
+    G.spawnT = 0.5 + Math.random()*0.4;
+    const bomb = Math.random() < 0.22;
+    G.items.push({ x: 40+Math.random()*(W-80), y:-20, vy: 120+Math.random()*120, bomb });
+  }
+  // падение
+  const by = H - 60;
+  for(let i=G.items.length-1;i>=0;i--){
+    const it = G.items[i];
+    it.y += it.vy*dt;
+    if(Math.abs(it.x - G.bx) < 45 && it.y > by-30 && it.y < by+20){
+      if(it.bomb){ G.lives--; sfx('hurt'); spawnParticles(it.x, it.y, 10,'#ff4060',{speed:3,speedVar:2,size:3,sizeVar:2}); if(G.lives<=0){ catchEnd(); } }
+      else { G.score++; sfx('star'); spawnParticles(it.x, it.y, 8,'#fbbf24',{speed:2,speedVar:2,size:2,sizeVar:2}); }
+      G.items.splice(i,1); continue;
+    }
+    if(it.y > H+30) G.items.splice(i,1);
+  }
+}
+function drawCatch(){
+  const G = CATCH;
+  X.fillStyle = '#08001a'; X.fillRect(0,0,W,H);
+  drawStarsBg(performance.now()/30, 0);
+  // падающие предметы
+  X.font = '30px serif'; X.textAlign='center'; X.textBaseline='middle';
+  for(const it of G.items) X.fillText(it.bomb?'☄️':'⭐', it.x, it.y);
+  X.textBaseline='alphabetic';
+  // корзинка (Диана)
+  const by = H - 60;
+  drawPoop(G.bx, by, 30, 1, 0, {hat:'crown'});
+  X.font='34px serif'; X.textAlign='center';
+  X.fillText('🧺', G.bx, by+34);
+  // HUD
+  X.fillStyle='#fff'; X.font='20px Fredoka'; X.textAlign='left';
+  X.fillText('⭐ '+G.score, 20, 36);
+  X.fillText('❤️ '.repeat(Math.max(0,G.lives)), 20, 66);
+  X.textAlign='right';
+  X.fillText('⏱️ '+Math.ceil(G.time)+'с', W-20, 36);
+  X.textAlign='left';
+}
+function catchEnd(){
+  if(CATCH.over) return;
+  CATCH.over = true;
+  sfx('complete');
+  totalStars += CATCH.score; save(); updateHUD();
+  for(let i=0;i<40;i++) spawnParticles(W/2+(Math.random()-.5)*W*.5, H*.3, 1, ['#fbbf24','#ff69b4','#c084fc'][i%3], {speed:4,speedVar:3,size:3,sizeVar:2,grav:.08,upward:3});
+  const lc = document.getElementById('level-complete');
+  lc.style.display = 'flex';
+  document.getElementById('lc-title').textContent = '🌟 Поймано звёзд: '+CATCH.score;
+  document.getElementById('lc-stars').textContent = '+'+CATCH.score+' ⭐';
+  gameState = 'levelComplete';
+}
+// клик/тап по экрану двигает корзинку
+C.addEventListener('pointerdown', e=>{ if(gameState==='catch') CATCH.bx = e.clientX; });
+addEventListener('pointermove', e=>{ if(gameState==='catch' && (e.buttons||e.pointerType==='touch')) CATCH.bx = e.clientX; });
+
+// ═══════════════════════════════════════
+//  ГЛОБАЛЬНАЯ КНОПКА «В КОМНАТУ» + МУЗЫКА
+// ═══════════════════════════════════════
+function goHome(){
+  sfx('door');
+  paused = false;
+  closeShop();
+  hidePlanetPanel();
+  document.getElementById('pause-menu').style.display = 'none';
+  document.getElementById('level-complete').style.display = 'none';
+  document.getElementById('video-overlay').style.display = 'none';
+  { const _vf=document.getElementById('video-frame'); if(_vf) _vf.src=''; }
+  document.getElementById('space-ui').style.display = 'none';
+  const extra = document.querySelector('#level-complete div:not(.lc-title):not(.lc-stars):not(.lc-btn):not([id])');
+  if(extra) extra.remove();
+  enterRoom();
+}
+document.getElementById('home-btn').addEventListener('click', goHome);
+
+// Фоновая музыка — живой космический эмбиент (пэд + бас + мелодия)
+let musicOn = true, musicTimer = null, musicBus = null;
+function musicVoice(freq, dur, type, vol, t){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + dur*0.25);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(musicBus);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+// аккорды: Am - F - C - G (мечтательная прогрессия)
+const CHORDS = [
+  [220.0, 261.6, 329.6],  // Am
+  [174.6, 220.0, 261.6],  // F
+  [261.6, 329.6, 392.0],  // C
+  [196.0, 246.9, 293.7],  // G
+];
+const MELODY = [523.2, 587.3, 659.3, 784.0, 659.3, 587.3, 493.9, 440.0];
+function startMusic(){
+  ensureAudio();
+  if(!musicOn || musicTimer || !AC) return;
+  if(!musicBus){ musicBus = AC.createGain(); musicBus.gain.value = 0.5; musicBus.connect(AC.destination); }
+  let bar = 0, beat = 0;
+  musicTimer = setInterval(()=>{
+    if(!AC) return;
+    const t = AC.currentTime;
+    const chord = CHORDS[bar % CHORDS.length];
+    if(beat === 0){
+      // пэд (аккорд, мягкий)
+      for(const f of chord) musicVoice(f, 2.4, 'sine', 0.05, t);
+      // бас
+      musicVoice(chord[0]/2, 2.0, 'triangle', 0.06, t);
+    }
+    // мелодия-звёздочки
+    if(Math.random() < 0.6){
+      const m = MELODY[(bar*2 + beat) % MELODY.length];
+      musicVoice(m, 0.8, 'triangle', 0.035, t + 0.02);
+    }
+    beat++;
+    if(beat >= 4){ beat = 0; bar++; }
+  }, 600);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
+document.getElementById('music-btn').addEventListener('click', ()=>{
+  musicOn = !musicOn;
+  document.getElementById('music-btn').textContent = musicOn ? '🔊' : '🔇';
+  if(musicOn) startMusic(); else stopMusic();
+});
+
+// Показ/скрытие глобальных кнопок в зависимости от состояния
+function updateGlobalUI(){
+  const show = gameState !== 'intro';
+  document.getElementById('home-btn').style.display = show ? 'block' : 'none';
+  document.getElementById('music-btn').style.display = show ? 'flex' : 'none';
+  // Прячем «В комнату» когда мы уже просто в комнате (чтобы не мешала) — оставляем видимой, полезно
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+startIntro();
+updateHUD();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

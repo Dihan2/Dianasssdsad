@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💩 Игры для Дианы</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--pink:#ff69b4;--purple:#7c3aed;--cyan:#06b6d4;--gold:#fbbf24}
+html,body{min-height:100%}
+body{
+  font-family:'Fredoka',sans-serif;color:#fff;
+  background:radial-gradient(ellipse at 50% -10%,#2a0a55 0%,#12002e 45%,#08001a 100%);
+  min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;
+  padding:40px 20px 60px;
+}
+/* звёзды */
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;opacity:.6;animation:tw 3s infinite}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:.8}}
+
+header{position:relative;z-index:1;text-align:center;margin-bottom:8px}
+h1{font-size:clamp(34px,7vw,58px);font-weight:700;
+  background:linear-gradient(90deg,var(--pink),var(--gold),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 4px 20px rgba(255,105,180,.35))}
+.sub{margin-top:6px;font-size:clamp(14px,2.6vw,19px);color:rgba(255,255,255,.55);font-weight:400}
+
+.grid{position:relative;z-index:1;display:grid;gap:22px;margin-top:38px;width:100%;
+  max-width:960px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.card{
+  position:relative;border-radius:24px;padding:26px 24px 24px;cursor:pointer;
+  text-decoration:none;color:#fff;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(6px);transition:transform .25s,box-shadow .25s,border-color .25s;
+  display:flex;flex-direction:column;gap:10px;min-height:200px}
+.card:hover{transform:translateY(-6px) scale(1.015)}
+.card .emoji{font-size:52px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.card .ctitle{font-size:23px;font-weight:700}
+.card .cdesc{font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;flex:1}
+.card .play{align-self:flex-start;margin-top:6px;font-size:14px;font-weight:600;
+  padding:8px 18px;border-radius:14px;background:rgba(0,0,0,.25)}
+.card .glow{position:absolute;inset:0;opacity:.16;z-index:-1;transition:opacity .25s}
+.card:hover .glow{opacity:.32}
+
+.c-room{border-color:rgba(255,105,180,.35)}
+.c-room:hover{box-shadow:0 16px 40px rgba(255,105,180,.28)}
+.c-room .glow{background:radial-gradient(circle at 50% 0%,var(--pink),transparent 70%)}
+.c-room .play{background:rgba(255,105,180,.22)}
+
+.c-space{border-color:rgba(6,182,212,.35)}
+.c-space:hover{box-shadow:0 16px 40px rgba(6,182,212,.28)}
+.c-space .glow{background:radial-gradient(circle at 50% 0%,var(--cyan),transparent 70%)}
+.c-space .play{background:rgba(6,182,212,.22)}
+
+.c-abyss{border-color:rgba(124,58,237,.4)}
+.c-abyss:hover{box-shadow:0 16px 40px rgba(124,58,237,.3)}
+.c-abyss .glow{background:radial-gradient(circle at 50% 0%,var(--purple),transparent 70%)}
+.c-abyss .play{background:rgba(124,58,237,.28)}
+
+.c-video{border-color:rgba(251,191,36,.35)}
+.c-video:hover{box-shadow:0 16px 40px rgba(251,191,36,.25)}
+.c-video .glow{background:radial-gradient(circle at 50% 0%,var(--gold),transparent 70%)}
+.c-video .play{background:rgba(251,191,36,.22)}
+.badge{position:absolute;top:16px;right:16px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75)}
+
+footer{position:relative;z-index:1;margin-top:44px;font-size:13px;color:rgba(255,255,255,.35)}
+footer b{color:var(--pink)}
+
+/* видео-модалка */
+#vmodal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  flex-direction:column;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);padding:20px}
+#vmodal.open{display:flex}
+#vbox{width:min(92vw,880px);aspect-ratio:16/9;border-radius:18px;overflow:hidden;
+  box-shadow:0 0 60px rgba(124,58,237,.45);border:2px solid rgba(124,58,237,.35);background:#000}
+#vbox iframe{width:100%;height:100%;border:none}
+#vclose{margin-top:22px;font-size:15px;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer;
+  padding:11px 30px;border:1px solid rgba(255,255,255,.2);border-radius:16px;transition:all .25s}
+#vclose:hover{color:#fff;border-color:var(--pink);background:rgba(255,105,180,.16)}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+
+<header>
+  <h1>💩 Игры для Дианы</h1>
+  <div class="sub">Одно приключение на всех — выбери, с чего начать ✨</div>
+</header>
+
+<div class="grid">
+  <a class="card c-room" href="diana-odyssey.html">
+    <div class="glow"></div>
+    <span class="badge">Главное</span>
+    <div class="emoji">🏠</div>
+    <div class="ctitle">Комната Дианы</div>
+    <div class="cdesc">Уютная комната-хаб: гуляй, включай телевизор, загляни в магазин, поиграй с котиком и открой дверь в другие игры.</div>
+    <span class="play">Войти ▸</span>
+  </a>
+
+  <a class="card c-space" href="poop-odyssey.html">
+    <div class="glow"></div>
+    <div class="emoji">🚀</div>
+    <div class="ctitle">Космическое приключение</div>
+    <div class="cdesc">Аркадный платформер в космосе: прыгай по планетам, собирай звёзды и лети сквозь галактику.</div>
+    <span class="play">Играть ▸</span>
+  </a>
+
+  <a class="card c-abyss" href="abyss-walker.html">
+    <div class="glow"></div>
+    <div class="emoji">⚔️</div>
+    <div class="ctitle">Abyss Walker</div>
+    <div class="cdesc">Тёмный роглайт-выживач: выбери класс, отбивайся от полчищ врагов, качай улучшения и синергии.</div>
+    <span class="play">Спуститься ▸</span>
+  </a>
+
+  <a class="card c-video" href="#" id="video-card">
+    <div class="glow"></div>
+    <div class="emoji">📺</div>
+    <div class="ctitle">Видео</div>
+    <div class="cdesc">Специальное видео — нажми, чтобы посмотреть прямо здесь 💜</div>
+    <span class="play">Смотреть ▸</span>
+  </a>
+</div>
+
+<footer>Сделано с <b>любовью</b> для Дианы 💜</footer>
+
+<div id="vmodal">
+  <div id="vbox"><iframe id="vframe" src="" title="Видео для Дианы"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+  <div id="vclose">✕ Закрыть</div>
+</div>
+
+<script>
+// звёзды
+const sc=document.getElementById('stars');
+for(let i=0;i<70;i++){
+  const s=document.createElement('div');s.className='star';
+  const sz=Math.random()*2+1;
+  s.style.width=s.style.height=sz+'px';
+  s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';
+  s.style.animationDelay=(Math.random()*3)+'s';
+  sc.appendChild(s);
+}
+// видео
+const VIDEO='https://www.youtube-nocookie.com/embed/CKLpJpVqpJo?rel=0&autoplay=1';
+const modal=document.getElementById('vmodal'),frame=document.getElementById('vframe');
+function openVideo(e){e.preventDefault();frame.src=VIDEO;modal.classList.add('open');}
+function closeVideo(){modal.classList.remove('open');frame.src='';}
+document.getElementById('video-card').addEventListener('click',openVideo);
+document.getElementById('vclose').addEventListener('click',closeVideo);
+modal.addEventListener('click',e=>{if(e.target===modal)closeVideo();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVideo();});
+</script>
+</body>
+</html>
