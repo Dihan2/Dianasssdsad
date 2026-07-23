@@ -488,7 +488,7 @@ document.getElementById('intro-skip').addEventListener('click', () => {
 //  ROOM STATE
 // ═══════════════════════════════════════
 const ROOM = {
-  width: 1400,
+  width: 1560,
   height: 500,
   floorY: 380,
   petX: 200, petY: 380,
@@ -512,6 +512,7 @@ const ROOM = {
     { id:'catch', x:560, y:345, w:45, h:35, label:'🧺 Ловушка звёзд', hint:'E — поймай звёзды' },
     { id:'abyss', x:1050, y:210, w:60, h:170, label:'🌀 Портал Бездны', hint:'E — Abyss Walker' },
     { id:'shop', x:1200, y:250, w:80, h:130, label:'🛒 Магазин', hint:'E — питомцы' },
+    { id:'resto', x:1380, y:210, w:90, h:170, label:'🦞 Ресторан', hint:'E — Чорноморка' },
   ],
   nearObj: null,
   stepTimer: 0,
@@ -983,6 +984,23 @@ function drawRoom(){
   X.font='16px serif';
   X.fillText('🐶🐱🐉', shop.x+shop.w/2, shop.y+95);
 
+  // Ресторан «Чорноморка»
+  const rst = R.objects.find(o=>o.id==='resto');
+  X.fillStyle = '#241436'; X.fillRect(rst.x, rst.y+26, rst.w, rst.h-26);
+  // полосатый навес
+  for(let i=0;i<5;i++){ X.fillStyle = i%2?'#ff785a':'#ffd9c9'; X.fillRect(rst.x+i*(rst.w/5), rst.y+8, rst.w/5, 20); }
+  // окошко-иллюминатор с мигающим неоном
+  const neon = 0.6 + 0.4*Math.sin(performance.now()/250);
+  X.fillStyle = `rgba(6,182,212,${0.25+neon*0.3})`;
+  X.beginPath(); X.arc(rst.x+rst.w/2, rst.y+80, 26, 0, Math.PI*2); X.fill();
+  X.font='30px serif'; X.textAlign='center';
+  X.fillText('🦞', rst.x+rst.w/2, rst.y+90);
+  // блюда-витрина
+  X.font='14px serif';
+  X.fillText('🐟🦐🦪', rst.x+rst.w/2, rst.y+120);
+  X.fillStyle = `rgba(255,120,90,${neon})`; X.font='10px Fredoka';
+  X.fillText('ЧОРНОМОРКА', rst.x+rst.w/2, rst.y+rst.h-8);
+
   // Питомец Дианы
   if(activePet && activePet !== 'none'){
     const pet = PETS.find(p=>p.id===activePet);
@@ -1095,6 +1113,10 @@ function tryInteract(){
       case 'abyss':
         sfx('door');
         location.href = 'abyss-walker.html';
+        break;
+      case 'resto':
+        sfx('door');
+        location.href = 'chornomorka.html';
         break;
     }
   }

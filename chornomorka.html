@@ -55,6 +55,26 @@ canvas{display:block}
 #serve.ready{background:rgba(52,211,153,.35);box-shadow:0 0 24px rgba(52,211,153,.6);animation:pulse 1s infinite}
 @keyframes pulse{50%{box-shadow:0 0 34px rgba(52,211,153,.9)}}
 
+/* MINI-GAME: тайминг «не пережарь» */
+#mini{position:fixed;inset:0;z-index:35;display:none;flex-direction:column;align-items:center;
+  justify-content:center;background:rgba(4,1,15,.55);backdrop-filter:blur(3px)}
+#mini.on{display:flex}
+#mini .mtitle{font-size:20px;font-weight:700;margin-bottom:14px}
+#mtrack{position:relative;width:min(80vw,440px);height:46px;border-radius:23px;
+  background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);overflow:hidden}
+#mzone{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(52,211,153,.35),rgba(52,211,153,.6),rgba(52,211,153,.35));
+  border-left:2px solid #34d399;border-right:2px solid #34d399}
+#mperfect{position:absolute;top:0;height:100%;width:3px;background:#fff;box-shadow:0 0 10px #fff}
+#mmark{position:absolute;top:-4px;width:6px;height:54px;background:#ff69b4;border-radius:3px;box-shadow:0 0 14px #ff69b4}
+#mini .mhint{margin-top:16px;font-size:14px;color:rgba(255,255,255,.55)}
+#mtap{margin-top:16px;font-size:18px;font-weight:700;padding:14px 46px;border:none;border-radius:16px;cursor:pointer;
+  background:linear-gradient(90deg,#ff785a,#ff69b4);color:#fff;box-shadow:0 8px 24px rgba(255,105,180,.4)}
+
+/* сбежавший рак */
+.crab{position:fixed;z-index:32;font-size:40px;cursor:pointer;pointer-events:auto;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));transition:transform .1s}
+.crab:active{transform:scale(.8)}
+
 /* SCREENS */
 .screen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;
   justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#1a0740 0%,#08001c 60%,#040010 100%)}
@@ -109,6 +129,18 @@ canvas{display:block}
   </div>
 
   <div id="actions"></div>
+</div>
+
+<!-- MINI-GAME тайминг -->
+<div id="mini">
+  <div class="mtitle" id="mtitle">🔥 Не пережарь!</div>
+  <div id="mtrack">
+    <div id="mzone"></div>
+    <div id="mperfect"></div>
+    <div id="mmark"></div>
+  </div>
+  <div class="mhint">Останови стрелку в зелёной зоне (белая линия = идеально) · ПРОБЕЛ</div>
+  <button id="mtap">Стоп! 🎯</button>
 </div>
 
 <!-- START -->
@@ -388,21 +420,58 @@ function popup(text,color,x,y){
   document.body.appendChild(p); setTimeout(()=>p.remove(),1000);
 }
 
+// ── МИНИ-ИГРА тайминга ──
+const mini={active:false,pos:0,dir:1,speed:1,zoneS:0,zoneW:0,perfect:0,cb:null};
+function startTiming(title,onDone){
+  mini.active=true; mini.pos=0; mini.dir=1;
+  mini.speed=1.1+served*0.05;                    // с ходом игры быстрее
+  mini.zoneW=Math.max(16,34-served*1.0);         // и зона уже
+  mini.zoneS=15+Math.random()*(100-15-mini.zoneW);
+  mini.perfect=mini.zoneS+mini.zoneW/2;
+  mini.cb=onDone;
+  el('mtitle').textContent=title;
+  el('mzone').style.left=mini.zoneS+'%'; el('mzone').style.width=mini.zoneW+'%';
+  el('mperfect').style.left=mini.perfect+'%';
+  el('mini').classList.add('on');
+}
+function stopTiming(){
+  if(!mini.active) return;
+  mini.active=false; el('mini').classList.remove('on');
+  const p=mini.pos, inZone=p>=mini.zoneS && p<=mini.zoneS+mini.zoneW;
+  const perfect=inZone && Math.abs(p-mini.perfect)<=3.5;
+  const cb=mini.cb; mini.cb=null;
+  cb && cb(perfect?'perfect':inZone?'good':'miss');
+}
+el('mtap').onclick=stopTiming;
+
 function doAction(id){
-  if(state!=='play'||!order) return;
+  if(state!=='play'||!order||mini.active) return;
   const need=order.steps[progress];
-  if(id===need){
-    progress++; S.step();
-    if(id==='boil'){ spawnSteam(pot.position.x,2,pot.position.z,0xffffff); S.cook(); }
-    if(id==='grill'){ grill.userData.bars.forEach(b=>b.material.emissive.setHex(0xff4400)); spawnSteam(grill.position.x,1.2,grill.position.z,0xff8844); S.cook();
-      setTimeout(()=>grill.userData.bars.forEach(b=>b.material.emissive.setHex(0x000000)),600); }
-    addToPlate(order.col);
-    renderSteps();
-  } else {
+  if(id!==need){
     S.wrong(); combo=1; patience=Math.max(1,patience-1.5); shake();
-    popup('Не то! 😖','#ff6b6b');
+    popup('Не то! 😖','#ff6b6b'); updateHUD(); return;
   }
-  updateHUD();
+  // для готовки (варка/жарка) — мини-игра тайминга
+  if(id==='boil'||id==='grill'){
+    const isGrill=id==='grill';
+    startTiming(isGrill?'🔳 Не пережарь бычка!':'🔥 Точно свари!',(res)=>{
+      if(res==='miss'){
+        S.wrong(); combo=1; patience=Math.max(1,patience-1.2); shake();
+        popup(isGrill?'Пережарил! 🔥':'Разварил! 💧','#ff8a5a');
+        updateHUD(); return; // шаг не засчитан, попробуй ещё
+      }
+      if(res==='perfect'){ coins+=5; score+=25; popup('Идеально! ⭐ +25','#ffe066'); }
+      else popup('Готово ✅','#34d399');
+      if(isGrill){ grill.userData.bars.forEach(b=>b.material.emissive.setHex(0xff4400));
+        spawnSteam(grill.position.x,1.2,grill.position.z,0xff8844);
+        setTimeout(()=>grill.userData.bars.forEach(b=>b.material.emissive.setHex(0x000000)),600); }
+      else spawnSteam(pot.position.x,2,pot.position.z,0xffffff);
+      S.cook(); progress++; addToPlate(order.col); renderSteps(); updateHUD();
+    });
+    return;
+  }
+  // гарнир — сразу
+  progress++; S.step(); addToPlate(order.col); renderSteps(); updateHUD();
 }
 function doServe(){
   if(state!=='play'||!order) return;
@@ -432,6 +501,35 @@ function missCustomer(){
 let shakeT=0;
 function shake(){ shakeT=0.3; }
 
+// ── сбежавший рак (бонус) ──
+let crabTimer=8;
+function spawnCrab(){
+  if(state!=='play') return;
+  const c=document.createElement('div'); c.className='crab'; c.textContent='🦀';
+  const fromLeft=Math.random()<.5;
+  const y=innerHeight*(0.45+Math.random()*0.25);
+  let x=fromLeft?-50:innerWidth+50; const dir=fromLeft?1:-1;
+  c.style.top=y+'px'; c.style.left=x+'px';
+  c.style.transform='scaleX('+(dir)+')';
+  document.body.appendChild(c);
+  let caught=false;
+  c.onclick=()=>{ if(caught)return; caught=true;
+    const bonus=15; coins+=bonus; score+=bonus; S.serve();
+    popup('🦀 +'+bonus+' 💰','#fbbf24', parseFloat(c.style.left), y);
+    updateHUD(); c.remove();
+  };
+  const speed=(150+Math.random()*110)*dir;   // px в секунду
+  let prev=performance.now();
+  (function run(now){
+    if(caught||state!=='play'){ if(!caught)c.remove(); return; }
+    const dt=Math.min((now-prev)/1000,0.05); prev=now;
+    x+=speed*dt; c.style.left=x+'px';
+    c.style.top=(y+Math.sin(now/120)*6)+'px';   // семенит
+    if(x<-80||x>innerWidth+80){ c.remove(); return; }
+    requestAnimationFrame(run);
+  })(prev);
+}
+
 // ══════════════════════════════════════════════════════════
 //  ЦИКЛ
 // ══════════════════════════════════════════════════════════
@@ -457,14 +555,24 @@ function loop(now){
     if(alien.userData?.happy){ alien.position.z-=dt*8; alien.position.y+=dt*3; alien.rotation.y+=dt*10;
       if(alien.position.z<-30){ scene.remove(alien); alien=null; } }
   }
+  // мини-игра: движение стрелки
+  if(mini.active){
+    mini.pos+=mini.dir*mini.speed*dt*95;
+    if(mini.pos>=100){mini.pos=100;mini.dir=-1;} if(mini.pos<=0){mini.pos=0;mini.dir=1;}
+    el('mmark').style.left=mini.pos+'%';
+  }
   // логика
   if(state==='play'){
     if(order){
-      patience-=dt; el('pfill').style.width=Math.max(0,patience/patienceMax*100)+'%';
-      if(patience<=0) missCustomer();
+      if(!mini.active){                     // во время мини-игры терпение не тает
+        patience-=dt; el('pfill').style.width=Math.max(0,patience/patienceMax*100)+'%';
+        if(patience<=0) missCustomer();
+      }
     } else {
       spawnDelay-=dt; if(spawnDelay<=0) newOrder();
     }
+    // случайный сбежавший рак
+    crabTimer-=dt; if(crabTimer<=0){ spawnCrab(); crabTimer=6+Math.random()*7; }
   }
   // тряска камеры
   if(shakeT>0){ shakeT-=dt; camera.position.x=(Math.random()-.5)*shakeT*2; }
@@ -479,7 +587,8 @@ requestAnimationFrame(loop);
 // ══════════════════════════════════════════════════════════
 function startGame(){
   ac(); state='play';
-  coins=0;score=0;combo=1;lives=3;served=0;order=null;spawnDelay=0.4;
+  coins=0;score=0;combo=1;lives=3;served=0;order=null;spawnDelay=0.4;crabTimer=8;
+  mini.active=false; el('mini').classList.remove('on'); clearCrabs();
   plateStack.forEach(m=>plate.remove(m)); plateStack=[];
   if(alien){scene.remove(alien);alien=null;}
   updateHUD(); buildActions();
@@ -487,6 +596,7 @@ function startGame(){
 }
 async function endGame(){
   state='over'; el('order').style.display='none';
+  mini.active=false; el('mini').classList.remove('on'); clearCrabs();
   el('goScore').textContent=score;
   el('goSub').textContent=`очков · ${coins} 💰 чаевых · ${served} блюд`;
   el('go').classList.remove('hidden');
@@ -504,6 +614,11 @@ function renderLB(list,meName){
     box.appendChild(row);
   });
 }
+
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){ e.preventDefault(); if(mini.active) stopTiming(); }
+});
+function clearCrabs(){ document.querySelectorAll('.crab').forEach(c=>c.remove()); }
 
 el('playBtn').onclick=()=>{ S.click(); startGame(); };
 el('againBtn').onclick=()=>{ S.click(); startGame(); };
